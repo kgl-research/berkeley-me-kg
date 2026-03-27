@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC Berkeley ME · Knowledge Graph</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:     #060a12;
+  --surf:   #0c1220;
+  --surf2:  #111826;
+  --surf3:  #171f2e;
+  --border: #1c2b40;
+  --border2:#243450;
+  --text:   #d8e4f0;
+  --muted:  #4e6585;
+  --accent: #4f8ef7;
+  --cyan:   #22d3ee;
+  --gold:   #f59e0b;
+  --green:  #34d399;
+  --purple: #a78bfa;
+  --red:    #f87171;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --c-core:       #4f8ef7;
+  --c-joint:      #a78bfa;
+  --c-grad_school:#22d3ee;
+  --c-emeritus:   #94a3b8;
+  --c-adjunct:    #f59e0b;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 48px 40px 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas: "hdr" "nav" "main";
+}
+
+/* ── Header ── */
+header {
+  grid-area: hdr;
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 20px;
+}
+.wordmark { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: .06em; }
+.wordmark em { color: var(--muted); font-style: normal; }
+.hdr-stats { display: flex; gap: 28px; margin-left: auto; }
+.hdr-stat { display: flex; flex-direction: column; align-items: flex-end; }
+.hdr-stat-val { font-family: var(--mono); font-size: 14px; font-weight: 500; line-height: 1; }
+.hdr-stat-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.hdr-btn { background: none; border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 11px; padding: 5px 14px; cursor: pointer; transition: all .15s; }
+.hdr-btn:hover { border-color: var(--accent); color: var(--accent); }
+.hdr-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#file-input { display: none; }
+
+/* ── Nav ── */
+nav {
+  grid-area: nav;
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 2px;
+}
+.nav-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 0 14px;
+  height: 40px;
+  cursor: pointer;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.on { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ── Main area ── */
+#main {
+  grid-area: main;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Drop zone ── */
+#drop-zone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--bg);
+  z-index: 10;
+}
+.dz-title { font-family: var(--mono); font-size: 20px; color: var(--accent); }
+.dz-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; line-height: 1.8; }
+.dz-sub code { color: var(--cyan); }
+.dz-area { border: 2px dashed var(--border2); border-radius: 10px; padding: 32px 52px; text-align: center; cursor: pointer; transition: all .2s; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; }
+.dz-area:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Shared layout for all views ── */
+.view { display: none; width: 100%; height: 100%; }
+.view.active { display: flex; }
+
+/* ── Research Space ── */
+#view-scatter {
+  position: relative;
+  background: var(--bg);
+}
+#gsvg { width: 100%; height: 100%; }
+#tooltip {
+  position: absolute;
+  background: var(--surf);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 10px 13px;
+  font-family: var(--mono);
+  font-size: 11px;
+  pointer-events: none;
+  display: none;
+  max-width: 260px;
+  z-index: 100;
+  line-height: 1.6;
+}
+.scatter-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.scatter-search {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  outline: none;
+  width: 200px;
+}
+.scatter-search:focus { border-color: var(--accent); }
+.ctrl-btn { background: var(--surf); border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 10px; padding: 4px 10px; cursor: pointer; transition: all .15s; }
+.ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ctrl-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.scatter-legend {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.leg-item { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.scatter-label { font-family: var(--mono); font-size: 9.5px; fill: var(--text); pointer-events: none; }
+.scatter-label.dim { fill: var(--muted); opacity: .25; }
+.scatter-label.hi { fill: #fff; font-weight: 500; }
+
+/* ── Faculty detail slide-in ── */
+#fac-detail {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 360px;
+  background: var(--surf);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  z-index: 5;
+}
+#fac-detail.open { transform: translateX(0); }
+.detail-hdr {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surf);
+  z-index: 1;
+}
+.detail-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+.detail-close:hover { color: var(--text); }
+.detail-badge { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+.detail-name { font-size: 16px; font-weight: 600; line-height: 1.3; padding-right: 24px; }
+.detail-affil { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.detail-links { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.ext-link { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 10px; color: var(--accent); text-decoration: none; padding: 3px 9px; border: 1px solid rgba(79,142,247,.3); border-radius: 3px; transition: all .15s; }
+.ext-link:hover { background: rgba(79,142,247,.1); }
+.detail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+.stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.stat-card { background: var(--surf2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; }
+.sc-val { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--accent); line-height: 1; }
+.sc-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
+.sec-lbl { font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { background: rgba(79,142,247,.1); border: 1px solid rgba(79,142,247,.22); border-radius: 3px; padding: 2px 8px; font-family: var(--mono); font-size: 10px; color: var(--accent); }
+.sim-list { display: flex; flex-direction: column; gap: 4px; }
+.sim-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surf2); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 12px; transition: border-color .15s; }
+.sim-row:hover { border-color: var(--border2); }
+.sim-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sim-pct { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--purple); }
+.pub-list-detail { display: flex; flex-direction: column; gap: 7px; }
+.pub-card-sm { background: var(--surf2); border: 1px solid var(--border); border-radius: 5px; padding: 10px 12px; cursor: pointer; transition: border-color .15s; }
+.pub-card-sm:hover { border-color: var(--border2); }
+.pub-card-sm.open { border-color: var(--accent); }
+.pub-title-sm { font-size: 11px; font-weight: 500; line-height: 1.4; }
+.pub-meta-sm { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
+.pub-cites-sm { color: var(--gold); }
+.pub-abstract-sm { display: none; font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.pub-card-sm.open .pub-abstract-sm { display: block; }
+
+/* ── Faculty Table ── */
+#view-table {
+  flex-direction: column;
+  overflow: hidden;
+}
+.table-toolbar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--surf);
+}
+.table-search {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  outline: none;
+  width: 240px;
+}
+.table-search:focus { border-color: var(--accent); }
+.filter-select {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+}
+.table-count { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+.table-wrap { overflow: auto; flex: 1; }
+table { width: 100%; border-collapse: collapse; }
+thead { position: sticky; top: 0; background: var(--surf2); z-index: 1; }
+th {
+  padding: 10px 16px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+th:hover { color: var(--text); }
+th.sorted { color: var(--accent); }
+th .sort-arrow { margin-left: 4px; opacity: .5; }
+th.sorted .sort-arrow { opacity: 1; }
+td {
+  padding: 10px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(28,43,64,.5);
+  vertical-align: middle;
+}
+tr:hover td { background: var(--surf2); cursor: pointer; }
+.td-name { font-weight: 500; }
+.td-cat { font-family: var(--mono); font-size: 10px; }
+.td-num { font-family: var(--mono); font-size: 12px; text-align: right; }
+.td-topics { font-size: 10px; color: var(--muted); max-width: 280px; }
+
+/* ── Publications ── */
+#view-pubs {
+  flex-direction: column;
+  overflow: hidden;
+}
+.pubs-toolbar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--surf);
+  flex-wrap: wrap;
+}
+.pub-search {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  outline: none;
+  width: 300px;
+  flex-shrink: 0;
+}
+.pub-search:focus { border-color: var(--accent); }
+.pub-count { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+.pubs-list { overflow-y: auto; flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.pub-card-full {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.pub-card-full:hover { border-color: var(--border2); }
+.pub-card-full.open { border-color: var(--accent); }
+.pub-title-full { font-size: 13px; font-weight: 500; line-height: 1.45; }
+.pub-venue-full { font-family: var(--mono); font-size: 10px; color: var(--cyan); margin-top: 5px; }
+.pub-row-full { display: flex; align-items: center; gap: 14px; margin-top: 5px; flex-wrap: wrap; }
+.pub-year-full { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.pub-cites-full { font-family: var(--mono); font-size: 10px; color: var(--gold); }
+.pub-authors-full { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.pub-abstract-full { display: none; font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pub-card-full.open .pub-abstract-full { display: block; }
+.pub-fac-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; display: none; }
+.pub-card-full.open .pub-fac-tags { display: flex; }
+.pub-fac-tag { font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 3px; border: 1px solid; cursor: pointer; }
+
+/* ── Compare ── */
+#view-compare {
+  flex-direction: column;
+  overflow: hidden;
+}
+.compare-toolbar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--surf);
+}
+.compare-search {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  outline: none;
+  width: 220px;
+}
+.compare-search:focus { border-color: var(--accent); }
+.compare-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.compare-body { display: flex; overflow: hidden; flex: 1; }
+.compare-col {
+  flex: 1;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.compare-col:last-child { border-right: none; }
+.compare-col-hdr {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surf2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.compare-col-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compare-col-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; flex-shrink: 0; }
+.compare-col-remove:hover { color: var(--red); }
+.compare-col-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  padding: 20px;
+  text-align: center;
+}
+.compare-add-results {
+  position: absolute;
+  background: var(--surf);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  width: 220px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.compare-add-result {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(28,43,64,.5);
+  transition: background .1s;
+}
+.compare-add-result:hover { background: var(--surf2); }
+.compare-col-content { overflow-y: auto; flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.compare-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.compare-stat { background: var(--surf2); border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; text-align: center; }
+.cs-val { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--accent); line-height: 1; }
+.cs-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 3px; }
+.compare-pub { background: var(--surf2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 11px; font-size: 11px; margin-bottom: 5px; cursor: pointer; transition: border-color .15s; }
+.compare-pub:hover { border-color: var(--border2); }
+.compare-pub.open { border-color: var(--accent); }
+.compare-pub-title { font-weight: 500; line-height: 1.4; }
+.compare-pub-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
+.compare-pub-abstract { display: none; font-size: 10px; color: var(--muted); line-height: 1.6; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); }
+.compare-pub.open .compare-pub-abstract { display: block; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">UC·BERKELEY <em>/</em> ME <em>/</em> KG</div>
+  <div class="hdr-stats">
+    <div class="hdr-stat"><span class="hdr-stat-val" id="s-fac">—</span><span class="hdr-stat-lbl">Faculty</span></div>
+    <div class="hdr-stat"><span class="hdr-stat-val" id="s-pub">—</span><span class="hdr-stat-lbl">Publications</span></div>
+    <div class="hdr-stat"><span class="hdr-stat-val" id="s-jrn">—</span><span class="hdr-stat-lbl">Journals</span></div>
+  </div>
+  <div id="load-status" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto"></div>
+  <input type="file" id="file-input" accept=".json" style="display:none">
+</header>
+
+<nav>
+  <button class="nav-btn on" data-view="scatter">Research Space</button>
+  <button class="nav-btn" data-view="table">Faculty Table</button>
+  <button class="nav-btn" data-view="pubs">Publications</button>
+  <button class="nav-btn" data-view="compare">Compare</button>
+</nav>
+
+<div id="main">
+  <!-- Loading state -->
+  <div id="drop-zone">
+    <div class="dz-title">ME Dept · Knowledge Graph</div>
+    <div class="dz-sub" id="dz-sub">Loading data…</div>
+    <div style="width:200px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px">
+      <div id="load-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s;border-radius:2px"></div>
+    </div>
+  </div>
+
+  <!-- Research Space -->
+  <div class="view active" id="view-scatter">
+    <svg id="gsvg"></svg>
+    <div id="tooltip"></div>
+    <div class="scatter-controls">
+      <input class="scatter-search" id="scatter-search" placeholder="Search faculty…">
+      <button class="ctrl-btn" id="btn-reset">Reset View</button>
+      <div id="layout-toggle" style="display:none;gap:4px">
+        <button class="ctrl-btn on" id="btn-umap" onclick="setLayout('umap')">UMAP</button>
+        <button class="ctrl-btn" id="btn-pca" onclick="setLayout('pca')">PCA</button>
+      </div>
+    </div>
+    <div class="scatter-legend" id="scatter-legend">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);margin-bottom:5px;text-transform:uppercase">Show / Hide</div>
+      <div id="cat-toggles"></div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);margin:8px 0 3px;text-transform:uppercase">Node size</div>
+      <div class="leg-item" style="color:var(--muted);font-size:10px;max-width:120px;line-height:1.4">Fused impact<br>(h-index + citations + pubs)</div>
+    </div>
+    <div id="fac-detail">
+      <div class="detail-hdr">
+        <button class="detail-close" id="detail-close">×</button>
+        <div class="detail-badge" id="d-badge"></div>
+        <div class="detail-name" id="d-name"></div>
+        <div class="detail-affil" id="d-affil"></div>
+        <div class="detail-links" id="d-links"></div>
+      </div>
+      <div class="detail-body" id="d-body"></div>
+    </div>
+  </div>
+
+  <!-- Faculty Table -->
+  <div class="view" id="view-table">
+    <div class="table-toolbar">
+      <input class="table-search" id="table-search" placeholder="Search by name or topic…">
+      <select class="filter-select" id="table-cat">
+        <option value="">All categories</option>
+        <option value="core">Core</option>
+        <option value="joint">Joint</option>
+        <option value="grad_school">Grad School</option>
+        <option value="emeritus">Emeritus</option>
+        <option value="adjunct">Adjunct</option>
+      </select>
+      <span class="table-count" id="table-count"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="faculty-table">
+        <thead>
+          <tr>
+            <th data-col="name">Name <span class="sort-arrow">↕</span></th>
+            <th data-col="category">Category <span class="sort-arrow">↕</span></th>
+            <th data-col="h_index" style="text-align:right">h-index <span class="sort-arrow">↕</span></th>
+            <th data-col="total_citations" style="text-align:right">Citations <span class="sort-arrow">↕</span></th>
+            <th data-col="pubs" style="text-align:right">Pubs <span class="sort-arrow">↕</span></th>
+            <th data-col="interests">Research Topics</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Publications -->
+  <div class="view" id="view-pubs">
+    <div class="pubs-toolbar">
+      <input class="pub-search" id="pub-search" placeholder="Search titles and abstracts…">
+      <select class="filter-select" id="pub-fac-filter"><option value="">All faculty</option></select>
+      <select class="filter-select" id="pub-year-filter"><option value="">All years</option></select>
+      <select class="filter-select" id="pub-sort">
+        <option value="citations">Sort: Citations</option>
+        <option value="year">Sort: Year</option>
+        <option value="title">Sort: Title</option>
+      </select>
+      <span class="pub-count" id="pub-count"></span>
+    </div>
+    <div class="pubs-list" id="pubs-list"></div>
+  </div>
+
+  <!-- Compare -->
+  <div class="view" id="view-compare">
+    <div class="compare-toolbar">
+      <div style="position:relative">
+        <input class="compare-search" id="compare-search" placeholder="Add faculty to compare…" autocomplete="off">
+        <div class="compare-add-results" id="compare-results" style="display:none;top:36px;left:0"></div>
+      </div>
+      <span class="compare-hint" id="compare-hint">Select up to 4 faculty to compare side by side</span>
+    </div>
+    <div class="compare-body" id="compare-body"></div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let G = null;
+let IMPACT = {};
+let PUB_COUNT = {};
+let FAC_BY_ID = {};
+let PUB_BY_ID = {};
+let FAC_PUBS = {};  // fac_id -> [pub]
+let VIEW = 'scatter';
+let SORT_COL = 'total_citations';
+let SORT_DIR = -1;
+let COMPARE_FAC = [];  // up to 4 faculty ids
+let SEL_FAC = null;
+let LAYOUT = 'umap';  // 'umap' | 'pca'
+let ACTIVE_CATS = new Set(['core','joint','grad_school','emeritus','adjunct','guest']);
+
+function buildCatToggles() {
+  const counts = {};
+  G.nodes.faculty.forEach(f => counts[f.category] = (counts[f.category]||0)+1);
+  const container = document.getElementById('cat-toggles');
+  container.innerHTML = '';
+
+  // Define display order
+  const order = ['core','joint','grad_school','emeritus','adjunct','guest'];
+  const orderedCats = order.filter(c => counts[c]);
+
+  orderedCats.forEach(cat => {
+    const n = counts[cat];
+    const color = CAT_COLOR[cat]||'#888';
+    const label = CAT_LABEL[cat]||cat;
+    const isGuest = cat === 'guest';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;user-select:none';
+    row.innerHTML = `
+      <input type="checkbox" id="ct_${cat}" ${ACTIVE_CATS.has(cat)?'checked':''} style="accent-color:${color}">
+      <div style="width:7px;height:7px;border-radius:50%;background:${isGuest?'none':''+color};border:${isGuest?'1.5px dashed var(--green)':'none'};flex-shrink:0"></div>
+      <label for="ct_${cat}" style="cursor:pointer;font-family:var(--mono);font-size:10px;color:${isGuest?'var(--green)':'var(--muted)'};flex:1">${label}</label>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${n}</span>`;
+    row.querySelector('input').addEventListener('change', ev => {
+      ev.target.checked ? ACTIVE_CATS.add(cat) : ACTIVE_CATS.delete(cat);
+      drawScatter();
+      renderTable();
+    });
+    container.appendChild(row);
+  });
+}
+
+const CAT_COLOR = {
+  core:'var(--c-core)', joint:'var(--c-joint)', grad_school:'var(--c-grad_school)',
+  emeritus:'var(--c-emeritus)', adjunct:'var(--c-adjunct)',
+  guest:'var(--green)',
+};
+const CAT_LABEL = {
+  core:'Core', joint:'Joint', grad_school:'Grad School Prof',
+  emeritus:'Emeritus', adjunct:'Adjunct', guest:'Added Researcher',
+};
+
+// ── File loading ───────────────────────────────────────────────────────────────
+// Auto-fetch knowledge_graph.json on load
+async function autoLoad() {
+  const sub  = document.getElementById('dz-sub');
+  const bar  = document.getElementById('load-bar');
+  const status = document.getElementById('load-status');
+  try {
+    sub.textContent = 'Fetching knowledge_graph.json…';
+    bar.style.width = '30%';
+    const res = await fetch('knowledge_graph.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    bar.style.width = '60%';
+    sub.textContent = 'Parsing data…';
+    const data = await res.json();
+    bar.style.width = '90%';
+    sub.textContent = 'Rendering…';
+    await new Promise(r => setTimeout(r, 50)); // let bar animate
+    bar.style.width = '100%';
+    init(data);
+  } catch(err) {
+    sub.textContent = `Could not load knowledge_graph.json — ${err.message}`;
+    bar.style.background = 'var(--red)';
+    bar.style.width = '100%';
+    status.textContent = 'Load failed';
+  }
+}
+
+autoLoad();
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+function init(data) {
+  G = data;
+
+  // Build lookup maps
+  FAC_BY_ID = Object.fromEntries(G.nodes.faculty.map(f => [f.id, f]));
+  PUB_BY_ID = Object.fromEntries(G.nodes.publications.map(p => [p.id, p]));
+  FAC_PUBS  = {};
+  G.edges.faculty_authored.forEach(e => {
+    if (!FAC_PUBS[e.from]) FAC_PUBS[e.from] = [];
+    if (PUB_BY_ID[e.to]) FAC_PUBS[e.from].push(PUB_BY_ID[e.to]);
+  });
+  G.nodes.faculty.forEach(f => { PUB_COUNT[f.id] = (FAC_PUBS[f.id]||[]).length; });
+
+  computeImpact();
+
+  document.getElementById('s-fac').textContent = G.nodes.faculty.length;
+  document.getElementById('s-pub').textContent = G.nodes.publications.length.toLocaleString();
+  document.getElementById('s-jrn').textContent = G.nodes.journals.length.toLocaleString();
+  document.getElementById('drop-zone').style.display = 'none';
+
+  // Populate pub faculty filter
+  const ff = document.getElementById('pub-fac-filter');
+  ff.innerHTML = '<option value="">All faculty</option>';
+  G.nodes.faculty.sort((a,b) => a.name.localeCompare(b.name))
+    .forEach(f => { const o = document.createElement('option'); o.value=f.id; o.textContent=f.name; ff.appendChild(o); });
+
+  // Populate pub year filter
+  const yf = document.getElementById('pub-year-filter');
+  const years = [...new Set(G.nodes.publications.map(p=>p.year).filter(Boolean))].sort().reverse();
+  years.forEach(y => { const o = document.createElement('option'); o.value=y; o.textContent=y; yf.appendChild(o); });
+
+  drawScatter();
+  buildCatToggles();
+  renderTable();
+  renderPubs();
+  renderCompare();
+}
+
+// ── Impact score ───────────────────────────────────────────────────────────────
+function computeImpact() {
+  const fac = G.nodes.faculty;
+  const hv = fac.map(f => f.h_index||0);
+  const cv = fac.map(f => f.total_citations||0);
+  const pv = fac.map(f => PUB_COUNT[f.id]||0);
+  const norm = (arr, v) => { const mx = Math.max(...arr); return mx>0?v/mx:0; };
+  fac.forEach((f,i) => { IMPACT[f.id] = (norm(hv,hv[i])+norm(cv,cv[i])+norm(pv,pv[i]))/3; });
+}
+const nodeR = f => 6 + IMPACT[f.id]*18;
+
+// ── Nav ────────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    VIEW = btn.dataset.view;
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-'+VIEW).classList.add('active');
+    if (VIEW==='scatter' && G) drawScatter();
+  });
+});
+
+// ── RESEARCH SPACE ─────────────────────────────────────────────────────────────
+function setLayout(mode) {
+  LAYOUT = mode;
+  document.getElementById('btn-umap').classList.toggle('on', mode==='umap');
+  document.getElementById('btn-pca').classList.toggle('on', mode==='pca');
+  drawScatter();
+}
+
+function drawScatter() {
+  if (!G) return;
+  const svg = d3.select('#gsvg');
+  svg.selectAll('*').remove();
+  const { width, height } = document.getElementById('view-scatter').getBoundingClientRect();
+  const g = svg.append('g');
+  const zoom = d3.zoom().scaleExtent([.05,12]).on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
+  document.getElementById('btn-reset').onclick = () =>
+    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(width*.05, height*.05).scale(.9));
+
+  const fac = G.nodes.faculty.filter(f => ACTIVE_CATS.has(f.category));
+
+  // Show layout toggle if UMAP is available
+  const hasUmap = G.meta?.has_umap && fac.some(f => f.umap_x !== undefined);
+  const hasPca  = fac.some(f => f.pca_x !== undefined);
+  const toggle  = document.getElementById('layout-toggle');
+  toggle.style.display = (hasUmap && hasPca) ? 'flex' : 'none';
+
+  // Pick coordinate fields based on active layout
+  const xField = (LAYOUT === 'umap' && hasUmap) ? 'umap_x' : 'pca_x';
+  const yField = (LAYOUT === 'umap' && hasUmap) ? 'umap_y' : 'pca_y';
+  const hasLayout = fac.some(f => f[xField] !== undefined);
+
+  let getX, getY;
+  if (hasLayout) {
+    const xs = fac.filter(f=>f[xField]!=null).map(f=>f[xField]);
+    const ys = fac.filter(f=>f[yField]!=null).map(f=>f[yField]);
+    const pad = 80;
+    const xsc = d3.scaleLinear().domain([d3.min(xs),d3.max(xs)]).range([pad, width-pad]);
+    const ysc = d3.scaleLinear().domain([d3.min(ys),d3.max(ys)]).range([pad, height-pad]);
+    getX = f => xsc(f[xField]??0);
+    getY = f => ysc(f[yField]??0);
+  } else {
+    fac.forEach(f => { if(!f._rx) { f._rx=Math.random()*(width-160)+80; f._ry=Math.random()*(height-160)+80; } });
+    getX = f => f._rx; getY = f => f._ry;
+  }
+
+  // Nodes
+  const node = g.append('g').selectAll('g.sn')
+    .data(fac, d=>d.id).join('g').attr('class','sn')
+    .attr('transform', f=>`translate(${getX(f)},${getY(f)})`)
+    .style('cursor','pointer')
+    .call(d3.drag()
+      .on('start', (e,d) => { d._dragging=true; })
+      .on('drag',  (e,d) => {
+        if(hasLayout) {
+          d[xField] = (d[xField]||0) + e.dx / Math.max((width-160) / Math.max(d3.max(fac.filter(f=>f[xField]!=null).map(f=>f[xField])) - d3.min(fac.filter(f=>f[xField]!=null).map(f=>f[xField])), 1), 1);
+          d[yField] = (d[yField]||0) + e.dy / Math.max((height-160) / Math.max(d3.max(fac.filter(f=>f[yField]!=null).map(f=>f[yField])) - d3.min(fac.filter(f=>f[yField]!=null).map(f=>f[yField])), 1), 1);
+        } else { d._rx=e.x; d._ry=e.y; }
+        d3.select(e.sourceEvent.target.closest('g.sn')).attr('transform',`translate(${e.x},${e.y})`);
+        g.selectAll('text.scatter-label').filter(dd=>dd.fac?.id===d.id).attr('x',e.x).attr('y',e.y-nodeR(d)-4);
+      })
+      .on('end', (e,d) => { d._dragging=false; })
+    )
+    .on('click', (e,d) => { e.stopPropagation(); openDetail(d); })
+    .on('mouseover', (e,d) => showTip(e,d))
+    .on('mouseout', hideTip);
+
+  node.append('circle')
+    .attr('r', f=>nodeR(f))
+    .attr('fill', f=>CAT_COLOR[f.category]||'#888')
+    .attr('fill-opacity', f => f.is_guest ? 0.25 : 0.85)
+    .attr('stroke', f => f.is_guest ? 'var(--green)' : '#060a12')
+    .attr('stroke-width', f => f.is_guest ? 2 : 1.5)
+    .attr('stroke-dasharray', f => f.is_guest ? '4,3' : null);
+
+  // Guest nodes get an additional outer ring to make them stand out
+  node.filter(f => f.is_guest).append('circle')
+    .attr('r', f => nodeR(f) + 5)
+    .attr('fill', 'none')
+    .attr('stroke', 'var(--green)')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-dasharray', '4,3')
+    .attr('stroke-opacity', 0.6);
+
+  // Labels with collision avoidance
+  const labelData = fac.map(f => ({
+    fac:f, x:getX(f), y:getY(f)-nodeR(f)-5, nx:getX(f), ny:getY(f), r:nodeR(f)
+  }));
+  const lsim = d3.forceSimulation(labelData)
+    .force('collide', d3.forceCollide(18))
+    .force('anchor', () => { labelData.forEach(d => { d.vx+=(d.nx-d.x)*.15; d.vy+=(d.ny-12-d.r-d.y)*.15; }); })
+    .stop();
+  for(let i=0;i<200;i++) lsim.tick();
+
+  const labels = g.append('g').selectAll('text.scatter-label')
+    .data(labelData, d=>d.fac.id).join('text')
+    .attr('class','scatter-label')
+    .attr('text-anchor','middle')
+    .attr('x', d=>d.x).attr('y', d=>d.y)
+    .text(d=>d.fac.name.split(' ').slice(-1)[0]);
+
+  // Leader lines
+  g.append('g').selectAll('line.leader')
+    .data(labelData).join('line').attr('class','leader')
+    .attr('x1',d=>d.x).attr('y1',d=>d.y+2)
+    .attr('x2',d=>d.nx).attr('y2',d=>d.ny-d.r)
+    .attr('stroke','var(--muted)').attr('stroke-width',.5)
+    .attr('stroke-opacity', d => { const dx=d.x-d.nx,dy=d.y-(d.ny-d.r-5); return Math.sqrt(dx*dx+dy*dy)>20?.4:0; });
+
+  svg.on('click', () => { closeDetail(); labels.classed('dim',false).classed('hi',false); node.selectAll('circle').attr('fill-opacity',.85); });
+
+  // Search
+  document.getElementById('scatter-search').oninput = function() {
+    const q = this.value.toLowerCase();
+    labels.classed('dim', d => !!q && !d.fac.name.toLowerCase().includes(q) && !(d.fac.interests||[]).some(i=>i.toLowerCase().includes(q)));
+    labels.classed('hi',  d => !!q && (d.fac.name.toLowerCase().includes(q) || (d.fac.interests||[]).some(i=>i.toLowerCase().includes(q))));
+    node.selectAll('circle').attr('fill-opacity', d => {
+      if(!q) return .85;
+      return d.name?.toLowerCase().includes(q)||(d.interests||[]).some(i=>i.toLowerCase().includes(q)) ? 1 : .15;
+    });
+  };
+
+  svg.call(zoom.transform, d3.zoomIdentity.translate(width*.05, height*.05).scale(.9));
+}
+
+function showTip(event, d) {
+  const tt = document.getElementById('tooltip');
+  tt.innerHTML = `<div style="font-weight:600;margin-bottom:4px">${d.name}</div>
+    ${d.h_index?`<div style="color:var(--muted)">h=${d.h_index} · ${(d.total_citations||0).toLocaleString()} citations</div>`:''}
+    ${(d.interests||[]).length?`<div style="color:var(--cyan);margin-top:3px;font-size:10px">${(d.interests||[]).slice(0,3).join(', ')}</div>`:''}`;
+  tt.style.display='block';
+  const wrap = document.getElementById('view-scatter').getBoundingClientRect();
+  let x=event.clientX-wrap.left+12, y=event.clientY-wrap.top+12;
+  if(x+270>wrap.width) x-=280; if(y+100>wrap.height) y-=110;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+}
+function hideTip() { document.getElementById('tooltip').style.display='none'; }
+
+function openDetail(f) {
+  SEL_FAC = f;
+  const pubs = (FAC_PUBS[f.id]||[]).sort((a,b)=>(b.citation_count||0)-(a.citation_count||0));
+  const sim = (G.edges.faculty_similar||[])
+    .filter(e=>e.from===f.id||e.to===f.id)
+    .map(e=>({fac:FAC_BY_ID[e.from===f.id?e.to:e.from],sim:e.similarity}))
+    .filter(x=>x.fac).sort((a,b)=>b.sim-a.sim).slice(0,8);
+
+  document.getElementById('d-badge').innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${CAT_COLOR[f.category]||'#888'}"></span> ${(CAT_LABEL[f.category]||'').toUpperCase()}`;
+  document.getElementById('d-name').textContent = f.name;
+  document.getElementById('d-affil').textContent = f.affiliation||'UC Berkeley';
+  document.getElementById('d-links').innerHTML = `
+    ${f.openalex_url?`<a class="ext-link" href="${f.openalex_url}" target="_blank">↗ OpenAlex</a>`:''}
+    ${f.profile_url?`<a class="ext-link" href="${f.profile_url}" target="_blank">↗ Faculty Page</a>`:''}`;
+  document.getElementById('d-body').innerHTML = `
+    <div class="stat-row">
+      <div class="stat-card"><div class="sc-val">${f.h_index??'—'}</div><div class="sc-lbl">h-index</div></div>
+      <div class="stat-card"><div class="sc-val">${(f.total_citations||0).toLocaleString()}</div><div class="sc-lbl">Citations</div></div>
+      <div class="stat-card"><div class="sc-val">${pubs.length}</div><div class="sc-lbl">Pubs</div></div>
+    </div>
+    ${(f.interests||[]).length?`<div><div class="sec-lbl">Research Topics</div><div class="tags">${(f.interests||[]).map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`:''}
+    ${sim.length?`<div><div class="sec-lbl">Most Similar</div><div class="sim-list">${sim.map(({fac:c,sim:s})=>`
+      <div class="sim-row" onclick="openDetail(FAC_BY_ID['${c.id}'])">
+        <div class="sim-dot" style="background:${CAT_COLOR[c.category]||'#888'}"></div>
+        <span>${c.name}</span>
+        <span class="sim-pct">${(s*100).toFixed(0)}%</span>
+      </div>`).join('')}</div></div>`:''}
+    <div><div class="sec-lbl">Top Publications</div><div class="pub-list-detail">${pubs.slice(0,20).map(p=>`
+      <div class="pub-card-sm" onclick="this.classList.toggle('open')">
+        <div class="pub-title-sm">${p.title}</div>
+        <div class="pub-meta-sm">${p.journal?p.journal+' · ':''}<span class="pub-cites-sm">${p.citation_count?'★'+p.citation_count.toLocaleString():''}</span> ${p.year||''}</div>
+        ${p.abstract?`<div class="pub-abstract-sm">${p.abstract}</div>`:''}
+      </div>`).join('')}</div></div>`;
+  document.getElementById('fac-detail').classList.add('open');
+}
+function closeDetail() { document.getElementById('fac-detail').classList.remove('open'); SEL_FAC=null; }
+document.getElementById('detail-close').addEventListener('click', closeDetail);
+
+// ── FACULTY TABLE ──────────────────────────────────────────────────────────────
+function renderTable() {
+  if (!G) return;
+  const q     = document.getElementById('table-search').value.toLowerCase();
+  const cat   = document.getElementById('table-cat').value;
+  let rows = G.nodes.faculty.filter(f =>
+    (!cat || f.category===cat) &&
+    (!q || f.name.toLowerCase().includes(q) || (f.interests||[]).some(i=>i.toLowerCase().includes(q)))
+  );
+  rows.sort((a,b) => {
+    let va = SORT_COL==='pubs' ? PUB_COUNT[a.id]||0 : (a[SORT_COL]||0);
+    let vb = SORT_COL==='pubs' ? PUB_COUNT[b.id]||0 : (b[SORT_COL]||0);
+    if (SORT_COL==='name' || SORT_COL==='category') { va=String(va); vb=String(vb); return SORT_DIR*(va.localeCompare(vb)); }
+    return SORT_DIR*(vb-va);
+  });
+
+  document.getElementById('table-count').textContent = `${rows.length} faculty`;
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = rows.map(f => `
+    <tr onclick="switchToFaculty('${f.id}')">
+      <td class="td-name" style="color:${CAT_COLOR[f.category]||'var(--text)'}">${f.name}</td>
+      <td class="td-cat" style="color:${CAT_COLOR[f.category]||'var(--muted)'}">${CAT_LABEL[f.category]||f.category}</td>
+      <td class="td-num">${f.h_index??'—'}</td>
+      <td class="td-num">${(f.total_citations||0).toLocaleString()}</td>
+      <td class="td-num">${PUB_COUNT[f.id]||0}</td>
+      <td class="td-topics">${(f.interests||[]).slice(0,4).join(' · ')}</td>
+    </tr>`).join('');
+
+  // Sort headers
+  document.querySelectorAll('#faculty-table th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.col===SORT_COL);
+    const arrow = th.querySelector('.sort-arrow');
+    if (th.dataset.col===SORT_COL) arrow.textContent = SORT_DIR===1?'↑':'↓';
+    else arrow.textContent = '↕';
+    th.onclick = () => {
+      if (SORT_COL===th.dataset.col) SORT_DIR*=-1;
+      else { SORT_COL=th.dataset.col; SORT_DIR=-1; }
+      renderTable();
+    };
+  });
+}
+
+function switchToFaculty(id) {
+  VIEW='scatter';
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.view==='scatter'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-scatter').classList.add('active');
+  drawScatter();
+  setTimeout(() => openDetail(FAC_BY_ID[id]), 100);
+}
+
+document.getElementById('table-search').addEventListener('input', renderTable);
+document.getElementById('table-cat').addEventListener('change', renderTable);
+
+// ── PUBLICATIONS ───────────────────────────────────────────────────────────────
+let PUB_PAGE = 0;
+const PUB_PAGE_SIZE = 50;
+
+function renderPubs() {
+  if (!G) return;
+  const q    = document.getElementById('pub-search').value.toLowerCase();
+  const facF = document.getElementById('pub-fac-filter').value;
+  const yearF= document.getElementById('pub-year-filter').value;
+  const sort = document.getElementById('pub-sort').value;
+
+  // Build set of pub IDs for selected faculty
+  let allowedPubs = null;
+  if (facF) {
+    allowedPubs = new Set((FAC_PUBS[facF]||[]).map(p=>p.id));
+  }
+
+  let pubs = G.nodes.publications.filter(p =>
+    (!allowedPubs || allowedPubs.has(p.id)) &&
+    (!yearF || p.year===yearF) &&
+    (!q || p.title?.toLowerCase().includes(q) || p.abstract?.toLowerCase().includes(q))
+  );
+
+  if (sort==='citations') pubs.sort((a,b)=>(b.citation_count||0)-(a.citation_count||0));
+  else if (sort==='year') pubs.sort((a,b)=>(b.year||'').localeCompare(a.year||''));
+  else pubs.sort((a,b)=>a.title?.localeCompare(b.title||'')||0);
+
+  document.getElementById('pub-count').textContent = `${pubs.length.toLocaleString()} papers`;
+
+  // Build faculty reverse lookup
+  const pubFacMap = {};
+  G.edges.faculty_authored.forEach(e => {
+    if (!pubFacMap[e.to]) pubFacMap[e.to]=[];
+    if (FAC_BY_ID[e.from]) pubFacMap[e.to].push(FAC_BY_ID[e.from]);
+  });
+
+  const show = pubs.slice(0, PUB_PAGE_SIZE * (PUB_PAGE+1));
+  const list = document.getElementById('pubs-list');
+  list.innerHTML = show.map(p => {
+    const authors = (pubFacMap[p.id]||[]);
+    const facTags = authors.map(f => `<span class="pub-fac-tag" style="color:${CAT_COLOR[f.category]||'#888'};border-color:${CAT_COLOR[f.category]||'#888'}" onclick="event.stopPropagation();switchToFaculty('${f.id}')">${f.name}</span>`).join('');
+    return `<div class="pub-card-full" onclick="this.classList.toggle('open')">
+      <div class="pub-title-full">${p.title}</div>
+      ${p.journal?`<div class="pub-venue-full">${p.journal}</div>`:''}
+      <div class="pub-row-full">
+        <span class="pub-year-full">${p.year||''}</span>
+        ${p.citation_count?`<span class="pub-cites-full">★ ${p.citation_count.toLocaleString()}</span>`:''}
+      </div>
+      ${p.abstract?`<div class="pub-abstract-full">${p.abstract}</div>`:''}
+      <div class="pub-fac-tags">${facTags}</div>
+    </div>`;
+  }).join('');
+
+  if (pubs.length > show.length) {
+    const btn = document.createElement('button');
+    btn.className='ctrl-btn'; btn.style.alignSelf='center'; btn.style.margin='8px auto';
+    btn.textContent=`Load more (${pubs.length-show.length} remaining)`;
+    btn.onclick = () => { PUB_PAGE++; renderPubs(); };
+    list.appendChild(btn);
+  }
+}
+
+['pub-search','pub-fac-filter','pub-year-filter','pub-sort'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => { PUB_PAGE=0; renderPubs(); });
+});
+document.getElementById('pub-search').addEventListener('input', () => { PUB_PAGE=0; renderPubs(); });
+
+// ── COMPARE ────────────────────────────────────────────────────────────────────
+function renderCompare() {
+  const body = document.getElementById('compare-body');
+  const slots = 4;
+  body.innerHTML = '';
+  for (let i=0; i<slots; i++) {
+    const fid = COMPARE_FAC[i];
+    const col = document.createElement('div');
+    col.className = 'compare-col';
+    if (fid) {
+      const f = FAC_BY_ID[fid];
+      const pubs = (FAC_PUBS[fid]||[]).sort((a,b)=>(b.citation_count||0)-(a.citation_count||0));
+      col.innerHTML = `
+        <div class="compare-col-hdr">
+          <div class="compare-col-name" style="color:${CAT_COLOR[f.category]||'var(--text)'}">${f.name}</div>
+          <button class="compare-col-remove" onclick="removeCompare('${fid}')">×</button>
+        </div>
+        <div class="compare-col-content">
+          <div class="compare-stat-grid">
+            <div class="compare-stat"><div class="cs-val">${f.h_index??'—'}</div><div class="cs-lbl">h-index</div></div>
+            <div class="compare-stat"><div class="cs-val">${(f.total_citations||0).toLocaleString()}</div><div class="cs-lbl">Citations</div></div>
+            <div class="compare-stat"><div class="cs-val">${pubs.length}</div><div class="cs-lbl">Pubs</div></div>
+            <div class="compare-stat"><div class="cs-val">${f.i10_index??'—'}</div><div class="cs-lbl">i10</div></div>
+          </div>
+          ${(f.interests||[]).length?`<div><div class="sec-lbl">Research Topics</div><div class="tags">${(f.interests||[]).map(i=>`<span class="tag" style="font-size:9px">${i}</span>`).join('')}</div></div>`:''}
+          <div><div class="sec-lbl">Top Publications</div>
+            ${pubs.slice(0,15).map(p=>`
+              <div class="compare-pub" onclick="this.classList.toggle('open')">
+                <div class="compare-pub-title">${p.title}</div>
+                <div class="compare-pub-meta">${p.year||''} ${p.citation_count?'· ★'+p.citation_count.toLocaleString():''}</div>
+                ${p.abstract?`<div class="compare-pub-abstract">${p.abstract}</div>`:''}
+              </div>`).join('')}
+          </div>
+        </div>`;
+    } else {
+      col.innerHTML = `<div class="compare-col-empty"><div style="font-size:28px;opacity:.2">+</div><div style="font-family:var(--mono);font-size:11px;color:var(--muted)">Search above<br>to add faculty</div></div>`;
+    }
+    body.appendChild(col);
+  }
+  document.getElementById('compare-hint').textContent =
+    COMPARE_FAC.length===0 ? 'Select up to 4 faculty to compare side by side' :
+    COMPARE_FAC.length===4 ? 'Maximum 4 faculty selected' :
+    `${COMPARE_FAC.length} selected — add ${4-COMPARE_FAC.length} more`;
+}
+
+function removeCompare(fid) {
+  COMPARE_FAC = COMPARE_FAC.filter(id=>id!==fid);
+  renderCompare();
+}
+
+// Compare search
+const cSearch = document.getElementById('compare-search');
+const cResults = document.getElementById('compare-results');
+cSearch.addEventListener('input', () => {
+  const q = cSearch.value.toLowerCase();
+  if (!q || !G) { cResults.style.display='none'; return; }
+  const matches = G.nodes.faculty
+    .filter(f => f.name.toLowerCase().includes(q) && !COMPARE_FAC.includes(f.id))
+    .slice(0,8);
+  if (!matches.length) { cResults.style.display='none'; return; }
+  cResults.innerHTML = matches.map(f =>
+    `<div class="compare-add-result" onclick="addCompare('${f.id}')" style="color:${CAT_COLOR[f.category]||'var(--text)'}">
+      ${f.name}<span style="color:var(--muted);font-size:10px;margin-left:6px">${CAT_LABEL[f.category]||''}</span>
+    </div>`).join('');
+  cResults.style.display='block';
+});
+document.addEventListener('click', e => {
+  if (!cSearch.contains(e.target) && !cResults.contains(e.target)) cResults.style.display='none';
+});
+function addCompare(fid) {
+  if (COMPARE_FAC.length<4 && !COMPARE_FAC.includes(fid)) {
+    COMPARE_FAC.push(fid);
+    renderCompare();
+  }
+  cSearch.value=''; cResults.style.display='none';
+}
+
+// ── Sample data ────────────────────────────────────────────────────────────────
+function loadSample() {
+  const fac = [
+    {id:'koushil_sreenath',name:'Koushil Sreenath',category:'core',h_index:28,i10_index:45,total_citations:4200,interests:['Legged Robots','Dynamic Locomotion','Control Theory','Safety-Critical Control'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'https://me.berkeley.edu/people/koushil-sreenath/',openalex_found:true,layout_x:120,layout_y:180},
+    {id:'masayoshi_tomizuka',name:'Masayoshi Tomizuka',category:'core',h_index:62,i10_index:310,total_citations:22000,interests:['Mechatronics','Motion Control','Robotics','Autonomous Driving'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'https://me.berkeley.edu/people/masayoshi-tomizuka/',openalex_found:true,layout_x:160,layout_y:220},
+    {id:'mark_w_mueller',name:'Mark W. Mueller',category:'core',h_index:22,i10_index:35,total_citations:2100,interests:['Aerial Robotics','Drone Control','State Estimation'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:140,layout_y:140},
+    {id:'negar_mehr',name:'Negar Mehr',category:'core',h_index:12,i10_index:14,total_citations:600,interests:['Autonomous Vehicles','Game Theory','Multi-agent Systems'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:200,layout_y:260},
+    {id:'murat_arcak',name:'Murat Arcak',category:'joint',h_index:38,i10_index:90,total_citations:7800,interests:['Nonlinear Control','Network Systems','Multi-agent'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:180,layout_y:300},
+    {id:'grace_x_gu',name:'Grace X. Gu',category:'core',h_index:24,i10_index:38,total_citations:2800,interests:['Machine Learning','Computational Mechanics','Bioinspired Materials'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:500,layout_y:400},
+    {id:'liwei_lin',name:'Liwei Lin',category:'core',h_index:52,i10_index:200,total_citations:13000,interests:['MEMS','Nanomanufacturing','Energy Harvesting','Wearables'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:600,layout_y:350},
+    {id:'shawn_shadden',name:'Shawn Shadden',category:'core',h_index:30,i10_index:55,total_citations:5100,interests:['CFD','Cardiovascular Flows','Lagrangian Methods'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:400,layout_y:550},
+    {id:'hannah_stuart',name:'Hannah Stuart',category:'core',h_index:14,i10_index:18,total_citations:780,interests:['Soft Robotics','Bio-inspired Design','Grasping'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:100,layout_y:280},
+    {id:'robert_o_ritchie',name:'Robert O. Ritchie',category:'joint',h_index:98,i10_index:460,total_citations:72000,interests:['Fracture Mechanics','Biomaterials','Fatigue','Metallurgy'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:650,layout_y:450},
+    {id:'alice_m_agogino',name:'Alice M. Agogino',category:'grad_school',h_index:42,i10_index:115,total_citations:8500,interests:['Design','Machine Learning','STEM Education'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:350,layout_y:200},
+    {id:'s_shankar_sastry',name:'S. Shankar Sastry',category:'joint',h_index:65,i10_index:280,total_citations:38000,interests:['Nonlinear Control','Robotics','Cyber-Physical Systems'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:220,layout_y:320},
+    {id:'kosa_gl',name:'Kosa Goucher-Lambert',category:'core',h_index:18,i10_index:25,total_citations:1800,interests:['Engineering Design','AI-assisted Design','Design Cognition','Creativity'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'https://me.berkeley.edu/people/kosa-goucher-lambert/',openalex_found:true,layout_x:360,layout_y:180},
+  ];
+  const pubs = [
+    {id:'p1',title:'Bipedal Locomotion via Deep Reinforcement Learning on Complex Terrains',year:'2022',journal:'IEEE Robotics and Automation Letters',abstract:'A deep RL framework for bipedal locomotion on highly varied terrain.',citation_count:187,authors_raw:'Koushil Sreenath, Zhongyu Li'},
+    {id:'p2',title:'Aggressive Quadrotor Maneuvers via Differential Flatness',year:'2021',journal:'IEEE Transactions on Robotics',abstract:'Trajectory planning for aggressive quadrotor flight exploiting differential flatness.',citation_count:312,authors_raw:'Mark W. Mueller, Koushil Sreenath'},
+    {id:'p3',title:'Machine Learning Accelerates Composite Material Design',year:'2022',journal:'Nature Materials',abstract:'Deep neural networks reduce composite material design iterations by 90%.',citation_count:224,authors_raw:'Grace X. Gu, Chun-Teh Chen'},
+    {id:'p4',title:'Flexible Piezoelectric MEMS for Wearable Energy Harvesting',year:'2021',journal:'Nano Energy',abstract:'Flexible MEMS devices for body-motion energy harvesting.',citation_count:445,authors_raw:'Liwei Lin, Yinglong Jiang'},
+    {id:'p5',title:'Game-Theoretic Planning for Autonomous Vehicles in Dense Traffic',year:'2023',journal:'IEEE Transactions on Intelligent Transportation Systems',abstract:'Multi-agent motion planning as a dynamic game with real-time equilibrium computation.',citation_count:78,authors_raw:'Negar Mehr, Murat Arcak, S. Shankar Sastry'},
+    {id:'p6',title:'Lagrangian Coherent Structures in Patient-Specific Cardiac Flows',year:'2020',journal:'Journal of Fluid Mechanics',abstract:'Blood transport analysis using Lagrangian coherent structures.',citation_count:203,authors_raw:'Shawn Shadden, Amirhossein Arzani'},
+    {id:'p7',title:'Fracture Toughness and Fatigue Resistance of Metallic Glasses',year:'2019',journal:'Acta Materialia',abstract:'Fracture mechanics of bulk metallic glasses revealing toughening via shear transformation zones.',citation_count:521,authors_raw:'Robert O. Ritchie, M. Launey'},
+    {id:'p8',title:'Adaptive Inspirational Stimuli in Engineering Design Ideation',year:'2021',journal:'Design Studies',abstract:'Computationally selected inspirational stimuli improve design outcomes during ideation sessions.',citation_count:92,authors_raw:'Kosa Goucher-Lambert, J. Cagan'},
+    {id:'p9',title:'Understanding Human Trust in AI-Assisted Decision Making',year:'2023',journal:'Journal of Mechanical Design',abstract:'How confidence evolves in human-AI collaboration and its effect on decision acceptance.',citation_count:45,authors_raw:'Kosa Goucher-Lambert, S. Booth'},
+    {id:'p10',title:'Electroadhesive Soft Grippers for Unstructured Manipulation',year:'2022',journal:'Advanced Functional Materials',abstract:'Soft robotic grippers using electrostatic adhesion for diverse object grasping.',citation_count:118,authors_raw:'Hannah Stuart, Grace X. Gu'},
+  ];
+  const journals = [...new Set(pubs.map(p=>p.journal))].map(j=>({id:j.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,60),name:j}));
+  const authored = [
+    {from:'koushil_sreenath',to:'p1',year:'2022'},{from:'koushil_sreenath',to:'p2',year:'2021'},
+    {from:'mark_w_mueller',to:'p2',year:'2021'},{from:'grace_x_gu',to:'p3',year:'2022'},
+    {from:'liwei_lin',to:'p4',year:'2021'},{from:'negar_mehr',to:'p5',year:'2023'},
+    {from:'murat_arcak',to:'p5',year:'2023'},{from:'s_shankar_sastry',to:'p5',year:'2023'},
+    {from:'shawn_shadden',to:'p6',year:'2020'},{from:'robert_o_ritchie',to:'p7',year:'2019'},
+    {from:'masayoshi_tomizuka',to:'p1',year:'2022'},{from:'hannah_stuart',to:'p10',year:'2022'},
+    {from:'grace_x_gu',to:'p10',year:'2022'},{from:'kosa_gl',to:'p8',year:'2021'},
+    {from:'kosa_gl',to:'p9',year:'2023'},{from:'alice_m_agogino',to:'p8',year:'2021'},
+  ];
+  const pij = pubs.map(p=>({from:p.id,to:journals.find(j=>j.name===p.journal)?.id||''})).filter(e=>e.to);
+  const coauthored=[];
+  authored.forEach(e1=>authored.forEach(e2=>{ if(e1.to===e2.to&&e1.from!==e2.from) coauthored.push({from:e1.from,to:e2.from,via_publication:e1.to}); }));
+  const simEdges=[];
+  fac.forEach((a,i)=>fac.forEach((b,j)=>{ if(i<j) simEdges.push({from:a.id,to:b.id,similarity:Math.random()*.4+.5}); }));
+  init({
+    meta:{department:'Mechanical Engineering',university:'UC Berkeley',has_layout:true,generated_at:new Date().toISOString(),total_faculty:fac.length,total_pubs:pubs.length,total_journals:journals.length},
+    nodes:{faculty:fac,publications:pubs,journals},
+    edges:{faculty_authored:authored,pub_in_journal:pij,faculty_coauthored:coauthored,faculty_similar:simEdges},
+    errors:[],
+  });
+}
+</script>
+</body>
+</html>
