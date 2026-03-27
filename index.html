@@ -663,6 +663,7 @@ async function autoLoad() {
     await new Promise(r => setTimeout(r, 50)); // let bar animate
     bar.style.width = '100%';
     init(data);
+    status.textContent = '';
   } catch(err) {
     sub.textContent = `Could not load knowledge_graph.json — ${err.message}`;
     bar.style.background = 'var(--red)';
