@@ -647,9 +647,10 @@ const CAT_LABEL = {
 // ── File loading ───────────────────────────────────────────────────────────────
 // Auto-fetch knowledge_graph.json on load
 async function autoLoad() {
-  const sub  = document.getElementById('dz-sub');
-  const bar  = document.getElementById('load-bar');
+  const sub    = document.getElementById('dz-sub');
+  const bar    = document.getElementById('load-bar');
   const status = document.getElementById('load-status');
+  let data;
   try {
     sub.textContent = 'Fetching knowledge_graph.json…';
     bar.style.width = '30%';
@@ -657,19 +658,21 @@ async function autoLoad() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     bar.style.width = '60%';
     sub.textContent = 'Parsing data…';
-    const data = await res.json();
+    data = await res.json();
     bar.style.width = '90%';
     sub.textContent = 'Rendering…';
-    await new Promise(r => setTimeout(r, 50)); // let bar animate
+    await new Promise(r => setTimeout(r, 50));
     bar.style.width = '100%';
-    init(data);
     status.textContent = '';
   } catch(err) {
     sub.textContent = `Could not load knowledge_graph.json — ${err.message}`;
     bar.style.background = 'var(--red)';
     bar.style.width = '100%';
     status.textContent = 'Load failed';
+    return;
   }
+  // Init outside try/catch so render errors don't show "Load failed"
+  init(data);
 }
 
 autoLoad();
