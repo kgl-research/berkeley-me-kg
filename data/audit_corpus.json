@@ -1,0 +1,23 @@
+{
+ "dropped": {
+  "duplicate": 11,
+  "type:editorial": 51,
+  "paratext": 45,
+  "type:erratum": 78,
+  "non_english": 92,
+  "filtered:jyh-yuan-chen": 78,
+  "no_faculty_author": 507,
+  "type:peer-review": 6,
+  "filtered:paul-k-wright": 75,
+  "filtered:liwei-lin": 113,
+  "filtered:xiang-zhang": 6,
+  "filtered:james-casey": 230,
+  "filtered:hayden-taylor": 1,
+  "type:letter": 14,
+  "no_text": 6,
+  "retracted": 3,
+  "type:retraction": 1
+ },
+ "kept": 18065,
+ "raw": 18879
+}

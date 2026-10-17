@@ -1,0 +1,656 @@
+{
+ "_doc": "slug -> confirmed OpenAlex author ids. 'inst_filter': if present, a work is kept only when the matching authorship lists an institution whose name matches one of these substrings (case-insensitive), or lists no institution at all and 'allow_no_inst' is true. Used for faculty whose OpenAlex profile is merged with namesakes. 'confidence': high = unique name + Berkeley affiliation + topics match profile; medium = topics match but profile shows merges/splits; low = unresolved. 'field_exclude': drop a work for this faculty when its primary OpenAlex field is in the list AND the authorship carries no plausible (inst_filter) affiliation.",
+ "behcet-acikmese": {
+  "ids": [
+   "A5044772884",
+   "A5089360133",
+   "A5135942096"
+  ],
+  "confidence": "high",
+  "notes": "Main profile (JPL/UW/Caltech, convex guidance). Two small split profiles merged. Joined Berkeley 2026."
+ },
+ "m-reza-alam": {
+  "ids": [
+   "A5033988175",
+   "A5056639040"
+  ],
+  "confidence": "high",
+  "notes": "Main profile 'Mohammad-Reza Alam' + small split 'Reza Alam' (UCB)."
+ },
+ "francesco-borrelli": {
+  "ids": [
+   "A5025067440"
+  ],
+  "confidence": "high",
+  "notes": "MPC / autonomous vehicles; 268 UCB works."
+ },
+ "van-p-carey": {
+  "ids": [
+   "A5112757112"
+  ],
+  "confidence": "high",
+  "notes": "Phase-change heat transfer; 224 UCB works."
+ },
+ "chris-dames": {
+  "ids": [
+   "A5026967877"
+  ],
+  "confidence": "high",
+  "notes": "Thermal transport."
+ },
+ "michael-gollner": {
+  "ids": [
+   "A5042965162"
+  ],
+  "confidence": "high",
+  "notes": "Fire dynamics. Japanese-translation stub A5044706579 excluded."
+ },
+ "salvador-rey-gomez": {
+  "ids": [
+   "A5009352960"
+  ],
+  "confidence": "high",
+  "notes": "Caltech/Stanford; turbulence & CFD; 10 works. Starts Jan 2027."
+ },
+ "kosa-goucher-lambert": {
+  "ids": [
+   "A5007941711"
+  ],
+  "confidence": "high",
+  "notes": "Design theory/methods."
+ },
+ "costas-grigoropoulos": {
+  "ids": [
+   "A5040927032"
+  ],
+  "confidence": "high",
+  "notes": "Laser processing; 522 UCB works. Zero-citation stub A5148821881 excluded."
+ },
+ "grace-x-gu": {
+  "ids": [
+   "A5025067820"
+  ],
+  "confidence": "high",
+  "notes": "ML for materials, composites."
+ },
+ "claudio-hail": {
+  "ids": [
+   "A5006721866"
+  ],
+  "confidence": "high",
+  "notes": "Metasurfaces (Caltech -> UCB 2025)."
+ },
+ "roberto-horowitz": {
+  "ids": [
+   "A5002745879"
+  ],
+  "confidence": "high",
+  "notes": "Control, traffic; 392 UCB works."
+ },
+ "alexis-kaminski": {
+  "ids": [
+   "A5060279166"
+  ],
+  "confidence": "high",
+  "notes": "Stratified turbulence."
+ },
+ "ken-kamrin": {
+  "ids": [
+   "A5023745556"
+  ],
+  "confidence": "high",
+  "notes": "Granular mechanics (MIT -> UCB)."
+ },
+ "homayoon-kazerooni": {
+  "ids": [
+   "A5077696000"
+  ],
+  "confidence": "high",
+  "notes": "Exoskeletons."
+ },
+ "kyriakos-komvopoulos": {
+  "ids": [
+   "A5085102760"
+  ],
+  "confidence": "high",
+  "notes": "Tribology, surface mechanics; 346 UCB works."
+ },
+ "liwei-lin": {
+  "ids": [
+   "A5100383258"
+  ],
+  "confidence": "medium",
+  "inst_filter": [
+   "Berkeley",
+   "University of California System",
+   "University of Michigan",
+   "National Taiwan University",
+   "BEI"
+  ],
+  "allow_no_inst": true,
+  "notes": "Common name; OpenAlex profile (955 works) shows Sichuan/Changzhou affiliations => merged with namesakes. Papers kept only where Lin's authorship is UCB/LBL/Michigan/NTU or has no affiliation data."
+ },
+ "fai-ma": {
+  "ids": [
+   "A5067606323"
+  ],
+  "confidence": "high",
+  "notes": "Vibration/dynamics; last-known UCB."
+ },
+ "simo-makiharju": {
+  "ids": [
+   "A5067189493"
+  ],
+  "confidence": "high",
+  "notes": "Experimental fluids."
+ },
+ "sara-mcmains": {
+  "ids": [
+   "A5028643684"
+  ],
+  "confidence": "high",
+  "notes": "Geometry/graphics for manufacturing."
+ },
+ "negar-mehr": {
+  "ids": [
+   "A5062267932",
+   "A5098821351"
+  ],
+  "confidence": "high",
+  "notes": "Main + small UCB split profile."
+ },
+ "emily-miller": {
+  "ids": [
+   "A5087459214"
+  ],
+  "confidence": "high",
+  "notes": "Emily Y. Miller (CU Boulder/Utah): osteoarthritis, MRI, knee injury - matches profile (computational biomechanics, ACL, cartilage MRI). 22 works. Starts Jan 2027."
+ },
+ "mohammad-r-k-mofrad": {
+  "ids": [
+   "A5062246663"
+  ],
+  "confidence": "high",
+  "notes": "Cell mechanics."
+ },
+ "mark-w-mueller": {
+  "ids": [
+   "A5009591368"
+  ],
+  "confidence": "high",
+  "notes": "Aerial robotics (ETH -> UCB)."
+ },
+ "grace-d-oconnell": {
+  "ids": [
+   "A5079024178"
+  ],
+  "confidence": "high",
+  "notes": "Spine/disc biomechanics."
+ },
+ "oliver-m-oreilly": {
+  "ids": [
+   "A5069461742"
+  ],
+  "confidence": "high",
+  "notes": "Dynamics; UCB 1993-."
+ },
+ "panayiotis-papadopoulos": {
+  "ids": [
+   "A5102898265"
+  ],
+  "confidence": "high",
+  "notes": "Computational mechanics; UCB 1990-."
+ },
+ "kameshwar-poolla": {
+  "ids": [
+   "A5023927229"
+  ],
+  "confidence": "high",
+  "notes": "Control/identification/smart grid. Bala Kameshwar Poolla (NREL) is a different person."
+ },
+ "lisa-pruitt": {
+  "ids": [
+   "A5014712152"
+  ],
+  "confidence": "high",
+  "notes": "Orthopaedic polymers/fatigue."
+ },
+ "michael-d-sangid": {
+  "ids": [
+   "A5082636926"
+  ],
+  "confidence": "high",
+  "notes": "Fatigue/microstructure (Purdue -> UCB 2026)."
+ },
+ "thomas-schutzius": {
+  "ids": [
+   "A5002685951"
+  ],
+  "confidence": "high",
+  "notes": "Surfaces/icing (ETH -> UCB 2023)."
+ },
+ "shawn-shadden": {
+  "ids": [
+   "A5045646606"
+  ],
+  "confidence": "high",
+  "notes": "Cardiovascular flows."
+ },
+ "lydia-sohn": {
+  "ids": [
+   "A5063994602"
+  ],
+  "confidence": "high",
+  "notes": "Microfluidic biosensing."
+ },
+ "koushil-sreenath": {
+  "ids": [
+   "A5054075105",
+   "A5124375628"
+  ],
+  "confidence": "high",
+  "notes": "Main + 2025-26 UCB split profile (RL/locomotion)."
+ },
+ "david-steigmann": {
+  "ids": [
+   "A5040589049"
+  ],
+  "confidence": "high",
+  "notes": "Elasticity/shells."
+ },
+ "hannah-stuart": {
+  "ids": [
+   "A5021360260"
+  ],
+  "confidence": "high",
+  "notes": "Embodied dexterity / robotics."
+ },
+ "hayden-taylor": {
+  "ids": [
+   "A5060055066"
+  ],
+  "confidence": "medium",
+  "inst_filter": [
+   "Berkeley",
+   "University of California System",
+   "Massachusetts Institute of Technology",
+   "Singapore-MIT",
+   "Nanyang",
+   "Cambridge",
+   "Simprint"
+  ],
+  "allow_no_inst": true,
+  "notes": "Profile lists German Cancer Research Center / Essen (2019) => likely merged with a medical Hayden Taylor; affiliation filter applied."
+ },
+ "masayoshi-tomizuka": {
+  "ids": [
+   "A5064077634",
+   "A5098246986",
+   "A5125041902"
+  ],
+  "confidence": "high",
+  "notes": "Main (1033 works) + two UCB split profiles (2025-26 robotics papers)."
+ },
+ "lining-yao": {
+  "ids": [
+   "A5052051114"
+  ],
+  "confidence": "high",
+  "notes": "Morphing matter (CMU -> UCB 2024)."
+ },
+ "tarek-i-zohdi": {
+  "ids": [
+   "A5079030702",
+   "A5108801978"
+  ],
+  "confidence": "high",
+  "notes": "Main + small UCB split."
+ },
+ "murat-arcak": {
+  "ids": [
+   "A5025743742"
+  ],
+  "confidence": "high",
+  "notes": "Control theory (EECS/ME)."
+ },
+ "peter-hosemann": {
+  "ids": [
+   "A5090203585"
+  ],
+  "confidence": "high",
+  "notes": "Nuclear materials."
+ },
+ "dorian-liepmann": {
+  "ids": [
+   "A5090887945"
+  ],
+  "confidence": "high",
+  "notes": "Microfluidics / BioMEMS."
+ },
+ "robert-o-ritchie": {
+  "ids": [
+   "A5034751387"
+  ],
+  "confidence": "high",
+  "notes": "Fracture/fatigue; 1224 works, h=152."
+ },
+ "s-shankar-sastry": {
+  "ids": [
+   "A5062722286",
+   "A5103101043"
+  ],
+  "confidence": "high",
+  "notes": "CORRECTED: old graph used stub A5103101043 (5 works). Real profile A5062722286 (1271 works, h=120) + stub merged."
+ },
+ "somayeh-sojoudi": {
+  "ids": [
+   "A5072786751"
+  ],
+  "confidence": "high",
+  "notes": "Optimization/control."
+ },
+ "alice-m-agogino": {
+  "ids": [
+   "A5108365897"
+  ],
+  "confidence": "high",
+  "notes": "Design, engineering education."
+ },
+ "david-b-bogy": {
+  "ids": [
+   "A5084588603"
+  ],
+  "confidence": "high",
+  "notes": "Tribology / head-disk interface."
+ },
+ "carlos-fernandez-pello": {
+  "ids": [
+   "A5032164158",
+   "A5077493033"
+  ],
+  "confidence": "high",
+  "notes": "Two OpenAlex profiles (232 + 156 works, both UCB fire/combustion) merged. Spanish art-theory namesake excluded."
+ },
+ "boris-rubinsky": {
+  "ids": [
+   "A5080256488"
+  ],
+  "confidence": "high",
+  "notes": "Bioheat transfer / electroporation."
+ },
+ "david-m-auslander": {
+  "ids": [
+   "A5072410143"
+  ],
+  "confidence": "high",
+  "notes": "Mechatronics / building control."
+ },
+ "james-casey": {
+  "ids": [
+   "A5080775953"
+  ],
+  "confidence": "medium",
+  "inst_filter": [
+   "Berkeley",
+   "University of California System",
+   "Lawrence Livermore"
+  ],
+  "allow_no_inst": true,
+  "topic_exclude": [
+   "Iberia",
+   "Spain",
+   "Historical",
+   "History",
+   "Medieval",
+   "Literature",
+   "Theology",
+   "Church",
+   "Ireland",
+   "Dementia",
+   "Cognitive",
+   "Real Estate",
+   "Canon Law",
+   "Religion",
+   "Nursing",
+   "Catholic"
+  ],
+  "notes": "OpenAlex profile merged with a historian (Univ. of East Anglia, medieval Spain). Affiliation + topic filter applied.",
+  "field_exclude": [
+   "Medicine",
+   "Health Professions",
+   "Nursing",
+   "Biochemistry, Genetics and Molecular Biology",
+   "Pharmacology, Toxicology and Pharmaceutics",
+   "Immunology and Microbiology",
+   "Veterinary",
+   "Dentistry",
+   "Agricultural and Biological Sciences",
+   "Neuroscience",
+   "Psychology",
+   "Arts and Humanities",
+   "Social Sciences",
+   "Economics, Econometrics and Finance",
+   "Business, Management and Accounting"
+  ]
+ },
+ "jyh-yuan-chen": {
+  "ids": [
+   "A5041673125",
+   "A5025513890"
+  ],
+  "confidence": "medium",
+  "inst_filter": [
+   "Berkeley",
+   "University of California System",
+   "Sandia",
+   "Lawrence Livermore"
+  ],
+  "allow_no_inst": true,
+  "topic_exclude": [
+   "Medical Education",
+   "Nursing",
+   "Clinical"
+  ],
+  "notes": "Profile 'Jy Chen' (307 works) includes medical-education topics => merged with namesakes. Affiliation + topic filter. Small UCB stub merged.",
+  "field_exclude": [
+   "Medicine",
+   "Health Professions",
+   "Nursing",
+   "Biochemistry, Genetics and Molecular Biology",
+   "Pharmacology, Toxicology and Pharmaceutics",
+   "Immunology and Microbiology",
+   "Veterinary",
+   "Dentistry",
+   "Agricultural and Biological Sciences",
+   "Neuroscience",
+   "Psychology",
+   "Arts and Humanities",
+   "Social Sciences",
+   "Economics, Econometrics and Finance",
+   "Business, Management and Accounting"
+  ]
+ },
+ "robert-dibble": {
+  "ids": [
+   "A5030860062"
+  ],
+  "confidence": "high",
+  "notes": "Combustion engines."
+ },
+ "michael-frenklach": {
+  "ids": [
+   "A5078826017"
+  ],
+  "confidence": "high",
+  "notes": "Combustion chemistry / soot."
+ },
+ "ralph-greif": {
+  "ids": [
+   "A5072930401"
+  ],
+  "confidence": "high",
+  "notes": "Heat transfer."
+ },
+ "george-johnson": {
+  "ids": [
+   "A5104032064"
+  ],
+  "confidence": "high",
+  "notes": "George C. Johnson: elasticity, ultrasonics, MEMS; UCB 1981-2012."
+ },
+ "tony-m-keaveny": {
+  "ids": [
+   "A5060491136"
+  ],
+  "confidence": "high",
+  "notes": "Bone biomechanics."
+ },
+ "dennis-k-lieu": {
+  "ids": [
+   "A5109856231"
+  ],
+  "confidence": "high",
+  "notes": "Electric motors / magnetics."
+ },
+ "philip-s-marcus": {
+  "ids": [
+   "A5067592185"
+  ],
+  "confidence": "high",
+  "notes": "Geophysical/astrophysical fluid dynamics."
+ },
+ "omer-savas": {
+  "ids": [
+   "A5101920368"
+  ],
+  "confidence": "high",
+  "notes": "Experimental fluid mechanics; UCB 1992-2024. Turkish namesakes (welding, medicine) excluded."
+ },
+ "benson-h-tongue": {
+  "ids": [
+   "A5109858875"
+  ],
+  "confidence": "high",
+  "notes": "Vibrations / vehicle dynamics."
+ },
+ "paul-k-wright": {
+  "ids": [
+   "A5102817905"
+  ],
+  "confidence": "medium",
+  "inst_filter": [
+   "Berkeley",
+   "University of California System",
+   "Carnegie Mellon",
+   "New York University",
+   "Courant",
+   "Lawrence Livermore",
+   "Oak Ridge",
+   "Hewlett",
+   "Cambridge"
+  ],
+  "allow_no_inst": true,
+  "topic_exclude": [
+   "Clinical",
+   "Hospital",
+   "Patient",
+   "Cancer",
+   "Surgery"
+  ],
+  "notes": "Profile shows NIH / Northwell / Alberta Health affiliations => merged with a medical Paul Wright. Affiliation + topic filter applied.",
+  "field_exclude": [
+   "Medicine",
+   "Health Professions",
+   "Nursing",
+   "Biochemistry, Genetics and Molecular Biology",
+   "Pharmacology, Toxicology and Pharmaceutics",
+   "Immunology and Microbiology",
+   "Veterinary",
+   "Dentistry",
+   "Agricultural and Biological Sciences",
+   "Neuroscience",
+   "Psychology"
+  ]
+ },
+ "kazuo-yamazaki": {
+  "ids": [
+   "A5102847358"
+  ],
+  "confidence": "high",
+  "notes": "Machining/CAD-CAM (UC Davis / UCB)."
+ },
+ "ronald-w-yeung": {
+  "ids": [
+   "A5037167646"
+  ],
+  "confidence": "high",
+  "notes": "Ship hydrodynamics; UCB 1972-."
+ },
+ "xiang-zhang": {
+  "ids": [
+   "A5100368854"
+  ],
+  "confidence": "medium",
+  "inst_filter": [
+   "Berkeley",
+   "University of California System",
+   "Lawrence Berkeley",
+   "Hong Kong",
+   "University of California, Los Angeles",
+   "Pennsylvania State",
+   "Northwestern",
+   "Nanosystems",
+   "Kavli"
+  ],
+  "allow_no_inst": true,
+  "notes": "Very common name; profile (776 works, plasmonics/metamaterials) looks correct but affiliation filter applied as a guard."
+ },
+ "george-anwar": {
+  "ids": [
+   "A5059299504"
+  ],
+  "confidence": "high",
+  "notes": "Lecturer; control systems; UCB 1986-2021."
+ },
+ "gabriel-gomes": {
+  "ids": [
+   "A5102923214"
+  ],
+  "confidence": "high",
+  "notes": "Lecturer; traffic control (PATH)."
+ },
+ "ala-moradian": {
+  "ids": [
+   "A5114033252",
+   "A5114408654"
+  ],
+  "confidence": "medium",
+  "notes": "Lecturer. Toronto-era fluid/heat-transfer papers (8) + Applied Materials digital-twin chapter (1). Industrial career mostly patents (not indexed)."
+ },
+ "k-youssefi": {
+  "ids": [],
+  "confidence": "low",
+  "notes": "Lecturer; no OpenAlex author record found for 'Kamran Youssefi' / 'K. Youssefi'. Excluded from embedding."
+ },
+ "david-horsley": {
+  "ids": [
+   "A5050152050"
+  ],
+  "confidence": "high",
+  "notes": "MEMS ultrasound (UC Davis adjunct); id validated in previous iteration."
+ },
+ "samuel-mao": {
+  "ids": [
+   "A5089506493"
+  ],
+  "confidence": "high",
+  "notes": "Laser materials / photocatalysis; appeared as UCB-affiliated candidate (167 UCB works)."
+ },
+ "vassilia-zorba": {
+  "ids": [
+   "A5037594089"
+  ],
+  "confidence": "high",
+  "notes": "Laser spectroscopy (LBL); id validated in previous iteration."
+ }
+}

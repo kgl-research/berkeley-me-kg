@@ -1,0 +1,23 @@
+# Python
+venv/
+venv_umap/
+__pycache__/
+*.pyc
+.Python
+
+# Large intermediates (regenerate with the pipeline; a float16 copy of the embeddings is committed)
+data/works.jsonl
+data/paper_embeddings.npy
+data/raw/works_*.json
+data/models/
+output_dryrun/
+data/dryrun/
+data/raw_dryrun/
+data/scratch/
+models/
+
+# Mac / editors
+.DS_Store
+.vscode/
+.idea/
+*.swp

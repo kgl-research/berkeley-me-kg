@@ -1,0 +1,899 @@
+[
+ {
+  "slug": "behcet-acikmese",
+  "name": "Behçet Açıkmeşe",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering Chancellor's Professor",
+  "q": [
+   "Behcet Ackmese"
+  ],
+  "last": "Ackmese",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "m-reza-alam",
+  "name": "M. Reza Alam",
+  "cat": "Core",
+  "title": "Vice Chair, Equity & Inclusion Professor of Mechanical Engineering American Bureau of Shipping Chair in Ocean Engineering",
+  "q": [
+   "M Alam",
+   "M. Reza Alam"
+  ],
+  "last": "Alam",
+  "orcid": null,
+  "old_id": "A5033988175"
+ },
+ {
+  "slug": "francesco-borrelli",
+  "name": "Francesco Borrelli",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering FANUC Chair in Mechanical Systems",
+  "q": [
+   "Francesco Borrelli"
+  ],
+  "last": "Borrelli",
+  "orcid": null,
+  "old_id": "A5025067440"
+ },
+ {
+  "slug": "van-p-carey",
+  "name": "Van P. Carey",
+  "cat": "Core",
+  "title": "A. Richard Newton Chair in Engineering Distinguished Professor of Mechanical Engineering",
+  "q": [
+   "Van Carey",
+   "Van P. Carey"
+  ],
+  "last": "Carey",
+  "orcid": null,
+  "old_id": "A5112757112"
+ },
+ {
+  "slug": "chris-dames",
+  "name": "Chris Dames",
+  "cat": "Core",
+  "title": "Chair, Department of Mechanical Engineering Professor of Mechanical Engineering Howard Penn Brown Chair in Mechanical Engineering",
+  "q": [
+   "Chris Dames"
+  ],
+  "last": "Dames",
+  "orcid": null,
+  "old_id": "A5026967877"
+ },
+ {
+  "slug": "michael-gollner",
+  "name": "Michael Gollner",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering",
+  "q": [
+   "Michael Gollner"
+  ],
+  "last": "Gollner",
+  "orcid": null,
+  "old_id": "A5042965162"
+ },
+ {
+  "slug": "salvador-rey-gomez",
+  "name": "Salvador Rey Gomez",
+  "cat": "Core",
+  "title": "Coming Soon - Starting January 2027",
+  "q": [
+   "Salvador Gomez",
+   "Salvador Rey Gomez"
+  ],
+  "last": "Gomez",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "kosa-goucher-lambert",
+  "name": "Kosa Goucher-Lambert",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering Associate Director of M. Des, Jacobs Institute",
+  "q": [
+   "Kosa Goucher-Lambert"
+  ],
+  "last": "Goucher-Lambert",
+  "orcid": null,
+  "old_id": "A5007941711"
+ },
+ {
+  "slug": "costas-grigoropoulos",
+  "name": "Costas Grigoropoulos",
+  "cat": "Core",
+  "title": "A. Martin Berlin Chair in Mechanical Engineering Distinguished Professor of Mechanical Engineering",
+  "q": [
+   "Costas Grigoropoulos"
+  ],
+  "last": "Grigoropoulos",
+  "orcid": null,
+  "old_id": "A5040927032"
+ },
+ {
+  "slug": "grace-x-gu",
+  "name": "Grace X. Gu",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering Don M. Cunningham Endowed Professorship",
+  "q": [
+   "Grace Gu",
+   "Grace X. Gu"
+  ],
+  "last": "Gu",
+  "orcid": null,
+  "old_id": "A5025067820"
+ },
+ {
+  "slug": "claudio-hail",
+  "name": "Claudio Hail",
+  "cat": "Core",
+  "title": "Assistant Professor of Mechanical Engineering",
+  "q": [
+   "Claudio Hail"
+  ],
+  "last": "Hail",
+  "orcid": null,
+  "old_id": "A5006721866"
+ },
+ {
+  "slug": "roberto-horowitz",
+  "name": "Roberto Horowitz",
+  "cat": "Core",
+  "title": "Distinguished Professor of Mechanical Engineering James Fife Endowed Chair",
+  "q": [
+   "Roberto Horowitz"
+  ],
+  "last": "Horowitz",
+  "orcid": null,
+  "old_id": "A5002745879"
+ },
+ {
+  "slug": "alexis-kaminski",
+  "name": "Alexis Kaminski",
+  "cat": "Core",
+  "title": "Assistant Professor of Mechanical Engineering Ho-Shang and Mei-Li Lee Faculty Fellow",
+  "q": [
+   "Alexis Kaminski"
+  ],
+  "last": "Kaminski",
+  "orcid": null,
+  "old_id": "A5060279166"
+ },
+ {
+  "slug": "ken-kamrin",
+  "name": "Ken Kamrin",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering",
+  "q": [
+   "Ken Kamrin"
+  ],
+  "last": "Kamrin",
+  "orcid": null,
+  "old_id": "A5023745556"
+ },
+ {
+  "slug": "homayoon-kazerooni",
+  "name": "Homayoon Kazerooni",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering",
+  "q": [
+   "Homayoon Kazerooni"
+  ],
+  "last": "Kazerooni",
+  "orcid": null,
+  "old_id": "A5077696000"
+ },
+ {
+  "slug": "kyriakos-komvopoulos",
+  "name": "Kyriakos Komvopoulos",
+  "cat": "Core",
+  "title": "Distinguished Professor of Mechanical Engineering",
+  "q": [
+   "Kyriakos Komvopoulos"
+  ],
+  "last": "Komvopoulos",
+  "orcid": null,
+  "old_id": "A5085102760"
+ },
+ {
+  "slug": "liwei-lin",
+  "name": "Liwei Lin",
+  "cat": "Core",
+  "title": "Distinguished Professor of Mechanical Engineering James Marshall Wells Academic Chair Co-Director, Berkeley Sensor & Actuator Center",
+  "q": [
+   "Liwei Lin"
+  ],
+  "last": "Lin",
+  "orcid": null,
+  "old_id": "A5100383258"
+ },
+ {
+  "slug": "fai-ma",
+  "name": "Fai Ma",
+  "cat": "Core",
+  "title": "Professor of Applied Mechanics",
+  "q": [
+   "Fai Ma"
+  ],
+  "last": "Ma",
+  "orcid": null,
+  "old_id": "A5067606323"
+ },
+ {
+  "slug": "simo-makiharju",
+  "name": "Simo Mäkiharju",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering",
+  "q": [
+   "Simo Makiharju"
+  ],
+  "last": "Makiharju",
+  "orcid": null,
+  "old_id": "A5067189493"
+ },
+ {
+  "slug": "sara-mcmains",
+  "name": "Sara McMains",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering",
+  "q": [
+   "Sara McMains"
+  ],
+  "last": "McMains",
+  "orcid": null,
+  "old_id": "A5028643684"
+ },
+ {
+  "slug": "negar-mehr",
+  "name": "Negar Mehr",
+  "cat": "Core",
+  "title": "Assistant Professor of Mechanical Engineering",
+  "q": [
+   "Negar Mehr"
+  ],
+  "last": "Mehr",
+  "orcid": null,
+  "old_id": "A5062267932"
+ },
+ {
+  "slug": "emily-miller",
+  "name": "Emily Miller",
+  "cat": "Core",
+  "title": "Coming Soon - Starting January 2027",
+  "q": [
+   "Emily Miller"
+  ],
+  "last": "Miller",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "mohammad-r-k-mofrad",
+  "name": "Mohammad R. K. Mofrad",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering and Bioengineering",
+  "q": [
+   "Mohammad Mofrad",
+   "Mohammad R. K. Mofrad"
+  ],
+  "last": "Mofrad",
+  "orcid": null,
+  "old_id": "A5062246663"
+ },
+ {
+  "slug": "mark-w-mueller",
+  "name": "Mark W. Mueller",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering Associate Director of CoE Aerospace Engineering Programs",
+  "q": [
+   "Mark Mueller",
+   "Mark W. Mueller"
+  ],
+  "last": "Mueller",
+  "orcid": null,
+  "old_id": "A5009591368"
+ },
+ {
+  "slug": "grace-d-oconnell",
+  "name": "Grace D. O’Connell",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering",
+  "q": [
+   "Grace O'Connell",
+   "Grace D. O'Connell"
+  ],
+  "last": "OConnell",
+  "orcid": null,
+  "old_id": "A5079024178"
+ },
+ {
+  "slug": "oliver-m-oreilly",
+  "name": "Oliver M. O’Reilly",
+  "cat": "Core",
+  "title": "Distinguished Professor of Mechanical Engineering Vice Provost for Undergraduate Education",
+  "q": [
+   "Oliver O'Reilly",
+   "Oliver M. O'Reilly"
+  ],
+  "last": "OReilly",
+  "orcid": null,
+  "old_id": "A5069461742"
+ },
+ {
+  "slug": "panayiotis-papadopoulos",
+  "name": "Panayiotis Papadopoulos",
+  "cat": "Core",
+  "title": "Distinguished Professor of Mechanical Engineering Byron and Elvira Nishkian Chair in Structural Engineering Director of CoE Aerospace Engineering Programs",
+  "q": [
+   "Panayiotis Papadopoulos"
+  ],
+  "last": "Papadopoulos",
+  "orcid": null,
+  "old_id": "A5102898265"
+ },
+ {
+  "slug": "kameshwar-poolla",
+  "name": "Kameshwar Poolla",
+  "cat": "Core",
+  "title": "Cadence Design Systems Distinguished Professor Distinguished Professor of Mechanical Engineering",
+  "q": [
+   "Kameshwar Poolla"
+  ],
+  "last": "Poolla",
+  "orcid": null,
+  "old_id": "A5023927229"
+ },
+ {
+  "slug": "lisa-pruitt",
+  "name": "Lisa Pruitt",
+  "cat": "Core",
+  "title": "Distinguished Professor of Mechanical Engineering Lawrence Talbot Chair in Engineering",
+  "q": [
+   "Lisa Pruitt"
+  ],
+  "last": "Pruitt",
+  "orcid": null,
+  "old_id": "A5014712152"
+ },
+ {
+  "slug": "michael-d-sangid",
+  "name": "Michael D. Sangid",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering Chancellor’s Professor Associate Director of CoE Aerospace Engineering Programs Lynden F. Davis Faculty Fellow",
+  "q": [
+   "Michael D. Sangid",
+   "Michael Sangid"
+  ],
+  "last": "Sangid",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "thomas-schutzius",
+  "name": "Thomas Schutzius",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering",
+  "q": [
+   "Thomas Schutzius"
+  ],
+  "last": "Schutzius",
+  "orcid": null,
+  "old_id": "A5002685951"
+ },
+ {
+  "slug": "shawn-shadden",
+  "name": "Shawn Shadden",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering",
+  "q": [
+   "Shawn Shadden"
+  ],
+  "last": "Shadden",
+  "orcid": null,
+  "old_id": "A5045646606"
+ },
+ {
+  "slug": "lydia-sohn",
+  "name": "Lydia Sohn",
+  "cat": "Core",
+  "title": "Chancellor's Professor Professor of Mechanical Engineering Almy C. Maynard and Agnes Offield Maynard Chair in Mechanical Engineering",
+  "q": [
+   "Lydia Sohn"
+  ],
+  "last": "Sohn",
+  "orcid": null,
+  "old_id": "A5063994602"
+ },
+ {
+  "slug": "koushil-sreenath",
+  "name": "Koushil Sreenath",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering Roscoe and Elizabeth Hughes Chair in Mechanical Engineering",
+  "q": [
+   "Koushil Sreenath"
+  ],
+  "last": "Sreenath",
+  "orcid": null,
+  "old_id": "A5054075105"
+ },
+ {
+  "slug": "david-steigmann",
+  "name": "David Steigmann",
+  "cat": "Core",
+  "title": "Professor of Mechanical Engineering",
+  "q": [
+   "David Steigmann"
+  ],
+  "last": "Steigmann",
+  "orcid": null,
+  "old_id": "A5040589049"
+ },
+ {
+  "slug": "hannah-stuart",
+  "name": "Hannah Stuart",
+  "cat": "Core",
+  "title": "Associate Professor of Mechanical Engineering Howard Penn Brown Chair in Mechanical Engineering",
+  "q": [
+   "Hannah Stuart"
+  ],
+  "last": "Stuart",
+  "orcid": null,
+  "old_id": "A5021360260"
+ },
+ {
+  "slug": "hayden-taylor",
+  "name": "Hayden Taylor",
+  "cat": "Core",
+  "title": "Vice Chair of Instruction Professor of Mechanical Engineering",
+  "q": [
+   "Hayden Taylor"
+  ],
+  "last": "Taylor",
+  "orcid": null,
+  "old_id": "A5060055066"
+ },
+ {
+  "slug": "masayoshi-tomizuka",
+  "name": "Masayoshi Tomizuka",
+  "cat": "Core",
+  "title": "Cheryl and John Neerhout, Jr. Distinguished Professor Distinguished Professor of Mechanical Engineering Associate Dean, Faculty, College of Engineering",
+  "q": [
+   "Masayoshi Tomizuka"
+  ],
+  "last": "Tomizuka",
+  "orcid": null,
+  "old_id": "A5064077634"
+ },
+ {
+  "slug": "lining-yao",
+  "name": "Lining Yao",
+  "cat": "Core",
+  "title": "Assistant Professor of Mechanical Engineering Zheng-White Faculty Fellow",
+  "q": [
+   "Lining Yao"
+  ],
+  "last": "Yao",
+  "orcid": null,
+  "old_id": "A5052051114"
+ },
+ {
+  "slug": "tarek-i-zohdi",
+  "name": "Tarek I. Zohdi",
+  "cat": "Core",
+  "title": "Associate Dean for Research, College of Engineering Will C. Hall Endowed Chair Chair of the UCB Computational & Data Science & Engineering Program Faculty Director, Richmond Field Station Professor of Mechanical Engineering",
+  "q": [
+   "Tarek I. Zohdi",
+   "Tarek Zohdi"
+  ],
+  "last": "Zohdi",
+  "orcid": null,
+  "old_id": "A5079030702"
+ },
+ {
+  "slug": "murat-arcak",
+  "name": "Murat Arcak",
+  "cat": "Joint",
+  "title": "Professor of Mechanical Engineering Professor of Electrical Engineering",
+  "q": [
+   "Murat Arcak"
+  ],
+  "last": "Arcak",
+  "orcid": null,
+  "old_id": "A5025743742"
+ },
+ {
+  "slug": "peter-hosemann",
+  "name": "Peter Hosemann",
+  "cat": "Joint",
+  "title": "Professor of Mechanical Engineering Professor of Nuclear Engineering Chair, Department of Nuclear Engineering E.S. Kuh Chair of Engineering",
+  "q": [
+   "Peter Hosemann"
+  ],
+  "last": "Hosemann",
+  "orcid": null,
+  "old_id": "A5090203585"
+ },
+ {
+  "slug": "dorian-liepmann",
+  "name": "Dorian Liepmann",
+  "cat": "Joint",
+  "title": "Professor of Mechanical Engineering and BioEngineering",
+  "q": [
+   "Dorian Liepmann"
+  ],
+  "last": "Liepmann",
+  "orcid": null,
+  "old_id": "A5090887945"
+ },
+ {
+  "slug": "robert-o-ritchie",
+  "name": "Robert O. Ritchie",
+  "cat": "Joint",
+  "title": "Distinguished Professor of Mechanical Engineering Professor of Materials Science & Engineering",
+  "q": [
+   "Robert O. Ritchie",
+   "Robert Ritchie"
+  ],
+  "last": "Ritchie",
+  "orcid": null,
+  "old_id": "A5034751387"
+ },
+ {
+  "slug": "s-shankar-sastry",
+  "name": "S. Shankar Sastry",
+  "cat": "Joint",
+  "title": "Distinguished Professor of Mechanical Engineering Professor of Electrical Engineering and Computer Sciences",
+  "q": [
+   "S Sastry",
+   "S. Shankar Sastry"
+  ],
+  "last": "Sastry",
+  "orcid": null,
+  "old_id": "A5103101043"
+ },
+ {
+  "slug": "somayeh-sojoudi",
+  "name": "Somayeh Sojoudi",
+  "cat": "Joint",
+  "title": "Associate Professor-In-Residence of Mechanical Engineering Associate Professor-In-Residence of EECS",
+  "q": [
+   "Somayeh Sojoudi"
+  ],
+  "last": "Sojoudi",
+  "orcid": null,
+  "old_id": "A5072786751"
+ },
+ {
+  "slug": "alice-m-agogino",
+  "name": "Alice M. Agogino",
+  "cat": "Professors of the Graduate School",
+  "title": "Distinguished Professor of the Graduate School Product Design Concentration Founder and Head Advisor, MEng Program Roscoe and Elizabeth Hughes Chair in Mechanical Engineering (7/1/2008-12/31/20221)",
+  "q": [
+   "Alice Agogino",
+   "Alice M. Agogino"
+  ],
+  "last": "Agogino",
+  "orcid": null,
+  "old_id": "A5108365897"
+ },
+ {
+  "slug": "david-b-bogy",
+  "name": "David B. Bogy",
+  "cat": "Professors of the Graduate School",
+  "title": "Professor of the Graduate School Director, Computer Mechanics Laboratory",
+  "q": [
+   "David B. Bogy",
+   "David Bogy"
+  ],
+  "last": "Bogy",
+  "orcid": null,
+  "old_id": "A5084588603"
+ },
+ {
+  "slug": "carlos-fernandez-pello",
+  "name": "Carlos Fernandez-Pello",
+  "cat": "Professors of the Graduate School",
+  "title": "Professor of the Graduate School Almy C. Maynard and Agnes Offield Maynard Endowed Chair (7/1/2009-6/30/2020)",
+  "q": [
+   "Carlos Fernandez-Pello"
+  ],
+  "last": "Fernandez-Pello",
+  "orcid": null,
+  "old_id": "A5032164158"
+ },
+ {
+  "slug": "boris-rubinsky",
+  "name": "Boris Rubinsky",
+  "cat": "Professors of the Graduate School",
+  "title": "Professor of the Graduate School",
+  "q": [
+   "Boris Rubinsky"
+  ],
+  "last": "Rubinsky",
+  "orcid": null,
+  "old_id": "A5080256488"
+ },
+ {
+  "slug": "david-m-auslander",
+  "name": "David M. Auslander",
+  "cat": "Emeritus",
+  "title": "Professor of the Graduate School",
+  "q": [
+   "David Auslander",
+   "David M. Auslander"
+  ],
+  "last": "Auslander",
+  "orcid": null,
+  "old_id": "A5072410143"
+ },
+ {
+  "slug": "james-casey",
+  "name": "James Casey",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "James Casey"
+  ],
+  "last": "Casey",
+  "orcid": null,
+  "old_id": "A5080775953"
+ },
+ {
+  "slug": "jyh-yuan-chen",
+  "name": "Jyh-Yuan Chen",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Jyh-Yuan Chen"
+  ],
+  "last": "Chen",
+  "orcid": null,
+  "old_id": "A5041673125"
+ },
+ {
+  "slug": "robert-dibble",
+  "name": "Robert Dibble",
+  "cat": "Emeritus",
+  "title": "Professor of the Graduate School",
+  "q": [
+   "Robert Dibble"
+  ],
+  "last": "Dibble",
+  "orcid": null,
+  "old_id": "A5030860062"
+ },
+ {
+  "slug": "michael-frenklach",
+  "name": "Michael Frenklach",
+  "cat": "Emeritus",
+  "title": "Distinguished Professor of Mechanical Engineering Roscoe and Elizabeth Hughes Chair in Mechanical Engineering",
+  "q": [
+   "Michael Frenklach"
+  ],
+  "last": "Frenklach",
+  "orcid": null,
+  "old_id": "A5078826017"
+ },
+ {
+  "slug": "ralph-greif",
+  "name": "Ralph Greif",
+  "cat": "Emeritus",
+  "title": "Professor of the Graduate School",
+  "q": [
+   "Ralph Greif"
+  ],
+  "last": "Greif",
+  "orcid": null,
+  "old_id": "A5072930401"
+ },
+ {
+  "slug": "george-johnson",
+  "name": "George Johnson",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "George Johnson"
+  ],
+  "last": "Johnson",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "tony-m-keaveny",
+  "name": "Tony M. Keaveny",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Tony Keaveny",
+   "Tony M. Keaveny"
+  ],
+  "last": "Keaveny",
+  "orcid": null,
+  "old_id": "A5060491136"
+ },
+ {
+  "slug": "dennis-k-lieu",
+  "name": "Dennis K. Lieu",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Dennis K. Lieu",
+   "Dennis Lieu"
+  ],
+  "last": "Lieu",
+  "orcid": null,
+  "old_id": "A5109856231"
+ },
+ {
+  "slug": "philip-s-marcus",
+  "name": "Philip S. Marcus",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering Tien-Modak Chancellor’s Chair in Engineering",
+  "q": [
+   "Philip Marcus",
+   "Philip S. Marcus"
+  ],
+  "last": "Marcus",
+  "orcid": null,
+  "old_id": "A5067592185"
+ },
+ {
+  "slug": "omer-savas",
+  "name": "Ömer Savaş",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Omer Savas"
+  ],
+  "last": "Savas",
+  "orcid": null,
+  "old_id": "A5101920368"
+ },
+ {
+  "slug": "benson-h-tongue",
+  "name": "Benson H. Tongue",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Benson H. Tongue",
+   "Benson Tongue"
+  ],
+  "last": "Tongue",
+  "orcid": null,
+  "old_id": "A5109858875"
+ },
+ {
+  "slug": "paul-k-wright",
+  "name": "Paul K. Wright",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Paul K. Wright",
+   "Paul Wright"
+  ],
+  "last": "Wright",
+  "orcid": null,
+  "old_id": "A5102817905"
+ },
+ {
+  "slug": "kazuo-yamazaki",
+  "name": "Kazuo Yamazaki",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering",
+  "q": [
+   "Kazuo Yamazaki"
+  ],
+  "last": "Yamazaki",
+  "orcid": null,
+  "old_id": "A5102847358"
+ },
+ {
+  "slug": "ronald-w-yeung",
+  "name": "Ronald W. Yeung",
+  "cat": "Emeritus",
+  "title": "Distinguished Professor Emeritus of Hydromechanics and Ocean Engineering",
+  "q": [
+   "Ronald W. Yeung",
+   "Ronald Yeung"
+  ],
+  "last": "Yeung",
+  "orcid": null,
+  "old_id": "A5037167646"
+ },
+ {
+  "slug": "xiang-zhang",
+  "name": "Xiang Zhang",
+  "cat": "Emeritus",
+  "title": "Professor Emeritus of Mechanical Engineering Ernest S. Kuh Endowed Chair, in the Department of Mechanical Engineering (2009-2019)",
+  "q": [
+   "Xiang Zhang"
+  ],
+  "last": "Zhang",
+  "orcid": null,
+  "old_id": "A5100368854"
+ },
+ {
+  "slug": "george-anwar",
+  "name": "George Anwar",
+  "cat": "Lecturers",
+  "title": "Lecturer",
+  "q": [
+   "George Anwar"
+  ],
+  "last": "Anwar",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "gabriel-gomes",
+  "name": "Gabriel Gomes",
+  "cat": "Lecturers",
+  "title": "Lecturer",
+  "q": [
+   "Gabriel Gomes"
+  ],
+  "last": "Gomes",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "ala-moradian",
+  "name": "Ala Moradian",
+  "cat": "Lecturers",
+  "title": "Lecturer",
+  "q": [
+   "Ala Moradian"
+  ],
+  "last": "Moradian",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "k-youssefi",
+  "name": "K. Youssefi",
+  "cat": "Lecturers",
+  "title": "Lecturer",
+  "q": [
+   "K. Youssefi"
+  ],
+  "last": "Youssefi",
+  "orcid": null,
+  "old_id": ""
+ },
+ {
+  "slug": "david-horsley",
+  "name": "David Horsley",
+  "cat": "Adjunct",
+  "title": "Adjunct Professor",
+  "q": [
+   "David Horsley"
+  ],
+  "last": "Horsley",
+  "orcid": null,
+  "old_id": "A5050152050"
+ },
+ {
+  "slug": "samuel-mao",
+  "name": "Samuel Mao",
+  "cat": "Adjunct",
+  "title": "Adjunct Professor",
+  "q": [
+   "Samuel Mao"
+  ],
+  "last": "Mao",
+  "orcid": null,
+  "old_id": "A5089506493"
+ },
+ {
+  "slug": "vassilia-zorba",
+  "name": "Vassilia Zorba",
+  "cat": "Adjunct",
+  "title": "Associate Adjunct Professor",
+  "q": [
+   "Vassilia Zorba"
+  ],
+  "last": "Zorba",
+  "orcid": null,
+  "old_id": "A5037594089"
+ }
+]
