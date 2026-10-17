@@ -1,1170 +1,713 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UC Berkeley ME · Knowledge Graph</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Berkeley ME Research Map</title>
+<meta name="description" content="Interactive map of the UC Berkeley Mechanical Engineering department's research landscape, built from OpenAlex publication data and SPECTER2 embeddings.">
+<script src="lib/d3.v7.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
-
 :root {
-  --bg:     #060a12;
-  --surf:   #0c1220;
-  --surf2:  #111826;
-  --surf3:  #171f2e;
-  --border: #1c2b40;
-  --border2:#243450;
-  --text:   #d8e4f0;
-  --muted:  #4e6585;
-  --accent: #4f8ef7;
-  --cyan:   #22d3ee;
-  --gold:   #f59e0b;
-  --green:  #34d399;
-  --purple: #a78bfa;
-  --red:    #f87171;
-  --mono: 'DM Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
-  --c-core:       #4f8ef7;
-  --c-joint:      #a78bfa;
-  --c-grad_school:#22d3ee;
-  --c-emeritus:   #94a3b8;
-  --c-adjunct:    #f59e0b;
+  color-scheme: light;
+  --bg: #f6f5f2; --surface: #fcfcfb; --surface-2: #efede8; --border: #dcd9d1;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #8a8880;
+  --accent: #2a78d6; --accent-soft: #cde2fb;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --good:#0ca30c; --warn:#fab219; --bad:#d03b3b;
+  --mid: #f0efec;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+  --font: "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: "SF Mono", Menlo, Consolas, monospace;
 }
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  display: grid;
-  height: 100vh;
-  grid-template-rows: 48px 40px 1fr;
-  grid-template-columns: 1fr;
-  grid-template-areas: "hdr" "nav" "main";
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --border:#33332f;
+    --text:#f0efec; --text-2:#c3c2b7; --text-3:#8d8c84;
+    --accent:#3987e5; --accent-soft:#1c3a63;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#2e9a2e; --s7:#9085e9; --s8:#e66767;
+    --mid:#383835; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5);
+  }
 }
-
-/* ── Header ── */
-header {
-  grid-area: hdr;
-  background: var(--surf);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 20px;
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --border:#33332f;
+  --text:#f0efec; --text-2:#c3c2b7; --text-3:#8d8c84;
+  --accent:#3987e5; --accent-soft:#1c3a63;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#2e9a2e; --s7:#9085e9; --s8:#e66767;
+  --mid:#383835; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5);
 }
-.wordmark { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: .06em; }
-.wordmark em { color: var(--muted); font-style: normal; }
-.hdr-stats { display: flex; gap: 28px; margin-left: auto; }
-.hdr-stat { display: flex; flex-direction: column; align-items: flex-end; }
-.hdr-stat-val { font-family: var(--mono); font-size: 14px; font-weight: 500; line-height: 1; }
-.hdr-stat-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
-.hdr-btn { background: none; border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 11px; padding: 5px 14px; cursor: pointer; transition: all .15s; }
-.hdr-btn:hover { border-color: var(--accent); color: var(--accent); }
-.hdr-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-#file-input { display: none; }
-
-/* ── Nav ── */
-nav {
-  grid-area: nav;
-  background: var(--surf);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 2px;
-}
-.nav-btn {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 0 14px;
-  height: 40px;
-  cursor: pointer;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  transition: all .15s;
-  white-space: nowrap;
-}
-.nav-btn:hover { color: var(--text); }
-.nav-btn.on { color: var(--text); border-bottom-color: var(--accent); }
-
-/* ── Main area ── */
-#main {
-  grid-area: main;
-  overflow: hidden;
-  position: relative;
-}
-
-/* ── Drop zone ── */
-#drop-zone {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: var(--bg);
-  z-index: 10;
-}
-.dz-title { font-family: var(--mono); font-size: 20px; color: var(--accent); }
-.dz-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; line-height: 1.8; }
-.dz-sub code { color: var(--cyan); }
-.dz-area { border: 2px dashed var(--border2); border-radius: 10px; padding: 32px 52px; text-align: center; cursor: pointer; transition: all .2s; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; }
-.dz-area:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ── Shared layout for all views ── */
-.view { display: none; width: 100%; height: 100%; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+button, select, input { font: inherit; color: inherit; }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+header h1 span { color: var(--text-3); font-weight: 400; }
+nav { display: flex; gap: 2px; flex-wrap: wrap; }
+nav button { background: none; border: 1px solid transparent; border-radius: 6px; padding: 5px 10px; cursor: pointer; color: var(--text-2); }
+nav button:hover { background: var(--surface-2); }
+nav button.active { background: var(--surface-2); color: var(--text); border-color: var(--border); font-weight: 600; }
+.spacer { flex: 1; }
+#search { width: 220px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+#searchResults { position: absolute; top: 46px; right: 70px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); max-height: 320px; overflow: auto; z-index: 50; display: none; min-width: 260px; }
+#searchResults div { padding: 7px 12px; cursor: pointer; } #searchResults div:hover { background: var(--surface-2); }
+#searchResults small { color: var(--text-3); margin-left: 6px; }
+.iconbtn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; cursor: pointer; color: var(--text-2); }
+main { flex: 1; display: flex; min-height: 0; }
+#views { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; }
 .view.active { display: flex; }
-
-/* ── Research Space ── */
-#view-scatter {
-  position: relative;
-  background: var(--bg);
-}
-#gsvg { width: 100%; height: 100%; }
-#tooltip {
-  position: absolute;
-  background: var(--surf);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  padding: 10px 13px;
-  font-family: var(--mono);
-  font-size: 11px;
-  pointer-events: none;
-  display: none;
-  max-width: 260px;
-  z-index: 100;
-  line-height: 1.6;
-}
-.scatter-controls {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.scatter-search {
-  background: var(--surf);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 5px 10px;
-  outline: none;
-  width: 200px;
-}
-.scatter-search:focus { border-color: var(--accent); }
-.ctrl-btn { background: var(--surf); border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 10px; padding: 4px 10px; cursor: pointer; transition: all .15s; }
-.ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
-.ctrl-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-.scatter-legend {
-  position: absolute;
-  bottom: 14px;
-  right: 14px;
-  background: var(--surf);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.leg-item { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
-.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.scatter-label { font-family: var(--mono); font-size: 9.5px; fill: var(--text); pointer-events: none; }
-.scatter-label.dim { fill: var(--muted); opacity: .25; }
-.scatter-label.hi { fill: #fff; font-weight: 500; }
-
-/* ── Faculty detail slide-in ── */
-#fac-detail {
-  position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 360px;
-  background: var(--surf);
-  border-left: 1px solid var(--border);
-  overflow-y: auto;
-  transform: translateX(100%);
-  transition: transform .25s ease;
-  z-index: 5;
-}
-#fac-detail.open { transform: translateX(0); }
-.detail-hdr {
-  padding: 16px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: var(--surf);
-  z-index: 1;
-}
-.detail-close {
-  position: absolute;
-  top: 12px; right: 12px;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 18px;
-  cursor: pointer;
-  line-height: 1;
-}
-.detail-close:hover { color: var(--text); }
-.detail-badge { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
-.detail-name { font-size: 16px; font-weight: 600; line-height: 1.3; padding-right: 24px; }
-.detail-affil { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.detail-links { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-.ext-link { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 10px; color: var(--accent); text-decoration: none; padding: 3px 9px; border: 1px solid rgba(79,142,247,.3); border-radius: 3px; transition: all .15s; }
-.ext-link:hover { background: rgba(79,142,247,.1); }
-.detail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
-.stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-.stat-card { background: var(--surf2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; }
-.sc-val { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--accent); line-height: 1; }
-.sc-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
-.sec-lbl { font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-.tags { display: flex; flex-wrap: wrap; gap: 5px; }
-.tag { background: rgba(79,142,247,.1); border: 1px solid rgba(79,142,247,.22); border-radius: 3px; padding: 2px 8px; font-family: var(--mono); font-size: 10px; color: var(--accent); }
-.sim-list { display: flex; flex-direction: column; gap: 4px; }
-.sim-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surf2); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 12px; transition: border-color .15s; }
-.sim-row:hover { border-color: var(--border2); }
-.sim-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.sim-pct { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--purple); }
-.pub-list-detail { display: flex; flex-direction: column; gap: 7px; }
-.pub-card-sm { background: var(--surf2); border: 1px solid var(--border); border-radius: 5px; padding: 10px 12px; cursor: pointer; transition: border-color .15s; }
-.pub-card-sm:hover { border-color: var(--border2); }
-.pub-card-sm.open { border-color: var(--accent); }
-.pub-title-sm { font-size: 11px; font-weight: 500; line-height: 1.4; }
-.pub-meta-sm { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
-.pub-cites-sm { color: var(--gold); }
-.pub-abstract-sm { display: none; font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
-.pub-card-sm.open .pub-abstract-sm { display: block; }
-
-/* ── Faculty Table ── */
-#view-table {
-  flex-direction: column;
-  overflow: hidden;
-}
-.table-toolbar {
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0;
-  background: var(--surf);
-}
-.table-search {
-  background: var(--surf2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 6px 10px;
-  outline: none;
-  width: 240px;
-}
-.table-search:focus { border-color: var(--accent); }
-.filter-select {
-  background: var(--surf2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 6px 10px;
-  outline: none;
-  cursor: pointer;
-}
-.table-count { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
-.table-wrap { overflow: auto; flex: 1; }
-table { width: 100%; border-collapse: collapse; }
-thead { position: sticky; top: 0; background: var(--surf2); z-index: 1; }
-th {
-  padding: 10px 16px;
-  text-align: left;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-}
-th:hover { color: var(--text); }
-th.sorted { color: var(--accent); }
-th .sort-arrow { margin-left: 4px; opacity: .5; }
-th.sorted .sort-arrow { opacity: 1; }
-td {
-  padding: 10px 16px;
-  font-size: 12px;
-  border-bottom: 1px solid rgba(28,43,64,.5);
-  vertical-align: middle;
-}
-tr:hover td { background: var(--surf2); cursor: pointer; }
-.td-name { font-weight: 500; }
-.td-cat { font-family: var(--mono); font-size: 10px; }
-.td-num { font-family: var(--mono); font-size: 12px; text-align: right; }
-.td-topics { font-size: 10px; color: var(--muted); max-width: 280px; }
-
-/* ── Publications ── */
-#view-pubs {
-  flex-direction: column;
-  overflow: hidden;
-}
-.pubs-toolbar {
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0;
-  background: var(--surf);
-  flex-wrap: wrap;
-}
-.pub-search {
-  background: var(--surf2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 6px 10px;
-  outline: none;
-  width: 300px;
-  flex-shrink: 0;
-}
-.pub-search:focus { border-color: var(--accent); }
-.pub-count { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
-.pubs-list { overflow-y: auto; flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
-.pub-card-full {
-  background: var(--surf);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: border-color .15s;
-}
-.pub-card-full:hover { border-color: var(--border2); }
-.pub-card-full.open { border-color: var(--accent); }
-.pub-title-full { font-size: 13px; font-weight: 500; line-height: 1.45; }
-.pub-venue-full { font-family: var(--mono); font-size: 10px; color: var(--cyan); margin-top: 5px; }
-.pub-row-full { display: flex; align-items: center; gap: 14px; margin-top: 5px; flex-wrap: wrap; }
-.pub-year-full { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-.pub-cites-full { font-family: var(--mono); font-size: 10px; color: var(--gold); }
-.pub-authors-full { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-.pub-abstract-full { display: none; font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-.pub-card-full.open .pub-abstract-full { display: block; }
-.pub-fac-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; display: none; }
-.pub-card-full.open .pub-fac-tags { display: flex; }
-.pub-fac-tag { font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 3px; border: 1px solid; cursor: pointer; }
-
-/* ── Compare ── */
-#view-compare {
-  flex-direction: column;
-  overflow: hidden;
-}
-.compare-toolbar {
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0;
-  background: var(--surf);
-}
-.compare-search {
-  background: var(--surf2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 6px 10px;
-  outline: none;
-  width: 220px;
-}
-.compare-search:focus { border-color: var(--accent); }
-.compare-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-.compare-body { display: flex; overflow: hidden; flex: 1; }
-.compare-col {
-  flex: 1;
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-.compare-col:last-child { border-right: none; }
-.compare-col-hdr {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surf2);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.compare-col-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.compare-col-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; flex-shrink: 0; }
-.compare-col-remove:hover { color: var(--red); }
-.compare-col-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--muted);
-  padding: 20px;
-  text-align: center;
-}
-.compare-add-results {
-  position: absolute;
-  background: var(--surf);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  width: 220px;
-  max-height: 280px;
-  overflow-y: auto;
-  z-index: 20;
-  box-shadow: 0 8px 24px rgba(0,0,0,.4);
-}
-.compare-add-result {
-  padding: 9px 14px;
-  cursor: pointer;
-  font-size: 12px;
-  border-bottom: 1px solid rgba(28,43,64,.5);
-  transition: background .1s;
-}
-.compare-add-result:hover { background: var(--surf2); }
-.compare-col-content { overflow-y: auto; flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
-.compare-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.compare-stat { background: var(--surf2); border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; text-align: center; }
-.cs-val { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--accent); line-height: 1; }
-.cs-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 3px; }
-.compare-pub { background: var(--surf2); border: 1px solid var(--border); border-radius: 4px; padding: 9px 11px; font-size: 11px; margin-bottom: 5px; cursor: pointer; transition: border-color .15s; }
-.compare-pub:hover { border-color: var(--border2); }
-.compare-pub.open { border-color: var(--accent); }
-.compare-pub-title { font-weight: 500; line-height: 1.4; }
-.compare-pub-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
-.compare-pub-abstract { display: none; font-size: 10px; color: var(--muted); line-height: 1.6; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); }
-.compare-pub.open .compare-pub-abstract { display: block; }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.toolbar { display: flex; gap: 14px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.toolbar label { display: inline-flex; gap: 6px; align-items: center; }
+.toolbar select, .toolbar input[type=text] { padding: 3px 6px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); }
+.toolbar .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.toolbar .seg button { background: none; border: none; padding: 4px 9px; cursor: pointer; color: var(--text-2); }
+.toolbar .seg button.active { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.canvas-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; }
+.canvas-wrap svg, .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.legend { position: absolute; left: 12px; top: 12px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; max-width: 320px; max-height: 45%; overflow: auto; }
+.legend .row { display: flex; align-items: center; gap: 7px; padding: 2px 0; cursor: pointer; color: var(--text-2); }
+.legend .row:hover, .legend .row.on { color: var(--text); }
+.legend .row.off { opacity: .4; }
+.sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: var(--shadow); max-width: 340px; z-index: 100; display: none; }
+.tip b { display: block; font-size: 13px; }
+.tip .sub { color: var(--text-3); }
+#panel { width: 380px; flex: none; border-left: 1px solid var(--border); background: var(--surface); overflow: auto; display: none; }
+#panel.open { display: block; }
+#panel .inner { padding: 16px; }
+#panel h2 { font-size: 18px; margin: 0 0 2px; letter-spacing: -.01em; }
+#panel .title { color: var(--text-2); font-size: 12.5px; margin-bottom: 8px; }
+#panel h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin: 16px 0 6px; }
+.chip { display: inline-block; padding: 2px 7px; border-radius: 10px; background: var(--surface-2); font-size: 11.5px; margin: 2px 3px 2px 0; color: var(--text-2); }
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stat { background: var(--surface-2); border-radius: 6px; padding: 6px 8px; }
+.stat .v { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+.stat .k { font-size: 10.5px; color: var(--text-3); }
+.bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.nb { display: grid; grid-template-columns: 1fr 48px 90px; gap: 6px; align-items: center; padding: 3px 0; font-size: 12.5px; cursor: pointer; }
+.nb:hover { color: var(--accent); }
+.nb .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.closebtn { float: right; }
+.scroll { flex: 1; overflow: auto; padding: 16px; min-height: 0; }
+table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+table.data th, table.data td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.data th { position: sticky; top: 0; background: var(--surface); cursor: pointer; user-select: none; font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+table.data th.sorted { color: var(--text); }
+table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.data tr:hover td { background: var(--surface-2); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.area-card h4 { margin: 0 0 4px; font-size: 14px; }
+.area-card .meta { color: var(--text-3); font-size: 12px; margin-bottom: 6px; }
+.area-card .terms { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+.fbar { display: grid; grid-template-columns: 150px 1fr 36px; gap: 8px; align-items: center; font-size: 12px; padding: 1px 0; cursor: pointer; }
+.fbar:hover { color: var(--accent); }
+.fbar .num { text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.muted { color: var(--text-3); }
+.small { font-size: 12px; }
+.pill { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; border: 1px solid var(--border); color: var(--text-2); }
+.pill.high { border-color: var(--good); color: var(--good); } .pill.medium { border-color: var(--warn); color: #9a6b00; } .pill.low { border-color: var(--bad); color: var(--bad); }
+:root[data-theme="dark"] .pill.medium { color: var(--warn); }
+.kv { display: grid; grid-template-columns: 220px 1fr; gap: 4px 12px; font-size: 13px; }
+.kv dt { color: var(--text-2); } .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.prose { max-width: 820px; line-height: 1.55; }
+.prose h2 { font-size: 17px; margin: 22px 0 8px; } .prose h3 { font-size: 14px; margin: 16px 0 6px; }
+.prose code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.cmp-grid .card h4 { margin: 0 0 2px; }
+#cloudYear { width: 220px; }
+.hint { font-size: 12px; color: var(--text-3); }
+@media (max-width: 900px) { #panel { position: fixed; right: 0; top: 0; bottom: 0; width: min(380px, 100vw); z-index: 60; box-shadow: var(--shadow); } #search { width: 140px; } }
 </style>
 </head>
 <body>
-
 <header>
-  <div class="wordmark">UC·BERKELEY <em>/</em> ME <em>/</em> KG</div>
-  <div class="hdr-stats">
-    <div class="hdr-stat"><span class="hdr-stat-val" id="s-fac">—</span><span class="hdr-stat-lbl">Faculty</span></div>
-    <div class="hdr-stat"><span class="hdr-stat-val" id="s-pub">—</span><span class="hdr-stat-lbl">Publications</span></div>
-    <div class="hdr-stat"><span class="hdr-stat-val" id="s-jrn">—</span><span class="hdr-stat-lbl">Journals</span></div>
-  </div>
-  <div id="load-status" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto"></div>
-  <input type="file" id="file-input" accept=".json" style="display:none">
+  <h1>Berkeley ME <span>· research map</span></h1>
+  <nav id="nav">
+    <button data-view="map" class="active">Map</button>
+    <button data-view="cloud">Paper cloud</button>
+    <button data-view="areas">Research areas</button>
+    <button data-view="matrix">Similarity</button>
+    <button data-view="network">Collaboration</button>
+    <button data-view="trajectories">Trajectories</button>
+    <button data-view="table">Faculty</button>
+    <button data-view="compare">Compare</button>
+    <button data-view="pubs">Publications</button>
+    <button data-view="about">Methods</button>
+  </nav>
+  <div class="spacer"></div>
+  <input id="search" type="text" placeholder="Find faculty, topic, paper…" autocomplete="off">
+  <div id="searchResults"></div>
+  <button class="iconbtn" id="themeBtn" title="Toggle theme">◐</button>
 </header>
-
-<nav>
-  <button class="nav-btn on" data-view="scatter">Research Space</button>
-  <button class="nav-btn" data-view="table">Faculty Table</button>
-  <button class="nav-btn" data-view="pubs">Publications</button>
-  <button class="nav-btn" data-view="compare">Compare</button>
-</nav>
-
-<div id="main">
-  <!-- Loading state -->
-  <div id="drop-zone">
-    <div class="dz-title">ME Dept · Knowledge Graph</div>
-    <div class="dz-sub" id="dz-sub">Loading data…</div>
-    <div style="width:200px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px">
-      <div id="load-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s;border-radius:2px"></div>
-    </div>
-  </div>
-
-  <!-- Research Space -->
-  <div class="view active" id="view-scatter">
-    <svg id="gsvg"></svg>
-    <div id="tooltip"></div>
-    <div class="scatter-controls">
-      <input class="scatter-search" id="scatter-search" placeholder="Search faculty…">
-      <button class="ctrl-btn" id="btn-reset">Reset View</button>
-      <div id="layout-toggle" style="display:none;gap:4px">
-        <button class="ctrl-btn on" id="btn-umap" onclick="setLayout('umap')">UMAP</button>
-        <button class="ctrl-btn" id="btn-pca" onclick="setLayout('pca')">PCA</button>
+<main>
+  <div id="views">
+    <!-- MAP -->
+    <section class="view active" id="view-map">
+      <div class="toolbar">
+        <label>Layout <span class="seg" id="mapLayout"><button data-v="umap" class="active">UMAP</button><button data-v="mds">MDS</button><button data-v="pca">PCA</button><button data-v="paper">Paper-map centroid</button></span></label>
+        <label>Vectors <span class="seg" id="mapVec"><button data-v="career" class="active">Career</button><button data-v="recent">Recent</button><button data-v="drift">Career → recent</button></span></label>
+        <label>Color <select id="mapColor"><option value="category">Category</option><option value="area">Dominant research area</option><option value="drift">Research drift</option><option value="breadth">Breadth</option></select></label>
+        <label>Size <select id="mapSize"><option value="cites">Citations</option><option value="h">h-index</option><option value="works">Works</option><option value="none">Uniform</option></select></label>
+        <label>Granularity <span class="seg granSeg"><button data-v="coarse" class="active">Coarse</button><button data-v="fine">Fine</button></span></label>
+        <label><input type="checkbox" id="mapCoauth"> Co-authorship links</label>
+        <label><input type="checkbox" id="mapSim"> Nearest-neighbour links</label>
+        <label><input type="checkbox" id="mapLabels" checked> Labels</label>
+        <span class="hint">Scroll to zoom · drag to pan · click a node for details</span>
       </div>
-    </div>
-    <div class="scatter-legend" id="scatter-legend">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);margin-bottom:5px;text-transform:uppercase">Show / Hide</div>
-      <div id="cat-toggles"></div>
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);margin:8px 0 3px;text-transform:uppercase">Node size</div>
-      <div class="leg-item" style="color:var(--muted);font-size:10px;max-width:120px;line-height:1.4">Fused impact<br>(h-index + citations + pubs)</div>
-    </div>
-    <div id="fac-detail">
-      <div class="detail-hdr">
-        <button class="detail-close" id="detail-close">×</button>
-        <div class="detail-badge" id="d-badge"></div>
-        <div class="detail-name" id="d-name"></div>
-        <div class="detail-affil" id="d-affil"></div>
-        <div class="detail-links" id="d-links"></div>
+      <div class="canvas-wrap" id="mapWrap"><svg id="mapSvg"></svg><div class="legend" id="mapLegend"></div></div>
+    </section>
+    <!-- CLOUD -->
+    <section class="view" id="view-cloud">
+      <div class="toolbar">
+        <label>Color <select id="cloudColor"><option value="area">Research area</option><option value="faculty">Selected faculty</option><option value="year">Year</option><option value="cites">Citations</option></select></label>
+        <label>Granularity <span class="seg granSeg"><button data-v="coarse" class="active">Coarse</button><button data-v="fine">Fine</button></span></label>
+        <label>Years <input type="range" id="cloudYear" min="1950" max="2026" value="1950"> <span id="cloudYearLbl">all</span></label>
+        <label><input type="checkbox" id="cloudCum" checked> cumulative</label>
+        <button class="iconbtn" id="cloudPlay">▶ play</button>
+        <label><input type="checkbox" id="cloudFacPts" checked> faculty centroids</label>
+        <label><input type="checkbox" id="cloudAreaLbl" checked> area labels</label>
+        <span class="hint" id="cloudHint"></span>
       </div>
-      <div class="detail-body" id="d-body"></div>
-    </div>
-  </div>
-
-  <!-- Faculty Table -->
-  <div class="view" id="view-table">
-    <div class="table-toolbar">
-      <input class="table-search" id="table-search" placeholder="Search by name or topic…">
-      <select class="filter-select" id="table-cat">
-        <option value="">All categories</option>
-        <option value="core">Core</option>
-        <option value="joint">Joint</option>
-        <option value="grad_school">Grad School</option>
-        <option value="emeritus">Emeritus</option>
-        <option value="adjunct">Adjunct</option>
-      </select>
-      <span class="table-count" id="table-count"></span>
-    </div>
-    <div class="table-wrap">
-      <table id="faculty-table">
-        <thead>
-          <tr>
-            <th data-col="name">Name <span class="sort-arrow">↕</span></th>
-            <th data-col="category">Category <span class="sort-arrow">↕</span></th>
-            <th data-col="h_index" style="text-align:right">h-index <span class="sort-arrow">↕</span></th>
-            <th data-col="total_citations" style="text-align:right">Citations <span class="sort-arrow">↕</span></th>
-            <th data-col="pubs" style="text-align:right">Pubs <span class="sort-arrow">↕</span></th>
-            <th data-col="interests">Research Topics</th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Publications -->
-  <div class="view" id="view-pubs">
-    <div class="pubs-toolbar">
-      <input class="pub-search" id="pub-search" placeholder="Search titles and abstracts…">
-      <select class="filter-select" id="pub-fac-filter"><option value="">All faculty</option></select>
-      <select class="filter-select" id="pub-year-filter"><option value="">All years</option></select>
-      <select class="filter-select" id="pub-sort">
-        <option value="citations">Sort: Citations</option>
-        <option value="year">Sort: Year</option>
-        <option value="title">Sort: Title</option>
-      </select>
-      <span class="pub-count" id="pub-count"></span>
-    </div>
-    <div class="pubs-list" id="pubs-list"></div>
-  </div>
-
-  <!-- Compare -->
-  <div class="view" id="view-compare">
-    <div class="compare-toolbar">
-      <div style="position:relative">
-        <input class="compare-search" id="compare-search" placeholder="Add faculty to compare…" autocomplete="off">
-        <div class="compare-add-results" id="compare-results" style="display:none;top:36px;left:0"></div>
+      <div class="canvas-wrap" id="cloudWrap"><canvas id="cloudCanvas"></canvas><svg id="cloudSvg" style="pointer-events:none"></svg><div class="legend" id="cloudLegend"></div></div>
+    </section>
+    <!-- AREAS -->
+    <section class="view" id="view-areas">
+      <div class="toolbar">
+        <label>Granularity <span class="seg granSeg"><button data-v="coarse" class="active">Coarse</button><button data-v="fine">Fine</button></span></label>
+        <label>Sort <select id="areaSort"><option value="size">Size</option><option value="recent">Recency</option><option value="cites">Mean citations</option></select></label>
+        <label>Heatmap rows <select id="heatNorm"><option value="row">% of faculty's papers</option><option value="col">% of area's papers</option><option value="count">Counts</option></select></label>
+        <span class="hint">Areas are discovered automatically (HDBSCAN on SPECTER2 paper embeddings) and labelled with class-based TF-IDF terms.</span>
       </div>
-      <span class="compare-hint" id="compare-hint">Select up to 4 faculty to compare side by side</span>
-    </div>
-    <div class="compare-body" id="compare-body"></div>
+      <div class="scroll"><div id="areaCards" class="grid2"></div><h3 style="margin:24px 0 8px">Faculty × research area</h3><div id="heatWrap" style="overflow:auto"></div></div>
+    </section>
+    <!-- MATRIX -->
+    <section class="view" id="view-matrix">
+      <div class="toolbar">
+        <label>Measure <select id="matMeasure"><option value="similarity">Embedding similarity (cosine)</option><option value="similarity_percentile">Embedding similarity (percentile rank)</option><option value="similarity_centred">Embedding similarity (mean-centred cosine, for comparison)</option><option value="topic_similarity">OpenAlex topic-profile similarity</option><option value="coauthorship">Co-authored papers</option><option value="gap">Similar but not co-authors (sim − coauth)</option></select></label>
+        <label>Order <select id="matOrder"><option value="cluster">Hierarchical clustering</option><option value="category">Category</option><option value="name">Name</option></select></label>
+        <label>Category <select id="matCat"><option value="">All</option></select></label>
+        <span class="hint">Hover a cell for the pair; click to open the pair in Compare.</span>
+      </div>
+      <div class="canvas-wrap" id="matWrap"><svg id="matSvg"></svg></div>
+    </section>
+    <!-- NETWORK -->
+    <section class="view" id="view-network">
+      <div class="toolbar">
+        <label>Min shared papers <input type="range" id="netMin" min="1" max="20" value="2"> <span id="netMinLbl">2</span></label>
+        <label><input type="checkbox" id="netSemantic"> add top-3 semantic neighbours (dashed)</label>
+        <span class="hint">Node size = total citations; edge width = shared papers. Table below lists strong semantic neighbours who have never co-authored.</span>
+      </div>
+      <div class="canvas-wrap" id="netWrap" style="flex:1.4"><svg id="netSvg"></svg></div>
+      <div class="scroll" style="flex:1;border-top:1px solid var(--border)"><h3 style="margin:0 0 8px">Potential collaborations — high similarity, no joint papers</h3><div id="gapTable"></div></div>
+    </section>
+    <!-- TRAJECTORIES -->
+    <section class="view" id="view-trajectories">
+      <div class="toolbar">
+        <label>Faculty <select id="trajSel"><option value="">— all with ≥ 3 eras —</option></select></label>
+        <label>Layout <span class="seg" id="trajLayout"><button data-v="umap" class="active">UMAP</button><button data-v="mds">MDS</button><button data-v="pca">PCA</button></span></label>
+        <span class="hint">Each path links a faculty member's research centroid across eras (≥5 papers per era). Arrowhead = most recent era.</span>
+      </div>
+      <div class="canvas-wrap" id="trajWrap" style="flex:1.5"><svg id="trajSvg"></svg></div>
+      <div class="scroll" style="flex:1;border-top:1px solid var(--border)"><h3 style="margin:0 0 8px">Research drift ranking <span class="muted" style="font-weight:400;font-size:12px">— cosine distance between career and recent vectors; only faculty with ≥8 papers in the last 10 years</span></h3><div id="driftTable"></div></div>
+    </section>
+    <!-- TABLE -->
+    <section class="view" id="view-table">
+      <div class="toolbar">
+        <label>Category <select id="tabCat"><option value="">All</option></select></label>
+        <label>Filter <input type="text" id="tabFilter" placeholder="name, topic, keyword"></label>
+        <span class="hint">Click a column to sort; click a name for details.</span>
+      </div>
+      <div class="scroll"><table class="data" id="facTable"></table></div>
+    </section>
+    <!-- COMPARE -->
+    <section class="view" id="view-compare">
+      <div class="toolbar">
+        <label>Add <select id="cmpSel"><option value="">— choose faculty —</option></select></label>
+        <button class="iconbtn" id="cmpClear">Clear</button>
+        <span class="hint">Up to 4 faculty side by side: pairwise similarity, shared papers, topic overlap.</span>
+      </div>
+      <div class="scroll"><div id="cmpPairs" style="margin-bottom:14px"></div><div class="cmp-grid" id="cmpGrid"></div></div>
+    </section>
+    <!-- PUBS -->
+    <section class="view" id="view-pubs">
+      <div class="toolbar">
+        <label>Search <input type="text" id="pubQ" placeholder="title words (abstracts too, once loaded)" style="width:280px"></label>
+        <label>Faculty <select id="pubFac"><option value="">All</option></select></label>
+        <label>Area <select id="pubArea"><option value="">All</option></select></label>
+        <label>From <input type="number" id="pubY0" style="width:70px" placeholder="1950"></label>
+        <label>To <input type="number" id="pubY1" style="width:70px" placeholder="2026"></label>
+        <label>Sort <select id="pubSort"><option value="cites">Citations</option><option value="year">Year</option></select></label>
+        <button class="iconbtn" id="pubAbs">Load abstracts</button>
+        <span class="hint" id="pubCount"></span>
+      </div>
+      <div class="scroll"><table class="data" id="pubTable"></table></div>
+    </section>
+    <!-- ABOUT -->
+    <section class="view" id="view-about"><div class="scroll"><div class="prose" id="aboutBody"></div></div></section>
   </div>
-</div>
-
+  <aside id="panel"><div class="inner" id="panelInner"></div></aside>
+</main>
+<div class="tip" id="tip"></div>
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
-let G = null;
-let IMPACT = {};
-let PUB_COUNT = {};
-let FAC_BY_ID = {};
-let PUB_BY_ID = {};
-let FAC_PUBS = {};  // fac_id -> [pub]
-let VIEW = 'scatter';
-let SORT_COL = 'total_citations';
-let SORT_DIR = -1;
-let COMPARE_FAC = [];  // up to 4 faculty ids
-let SEL_FAC = null;
-let LAYOUT = 'umap';  // 'umap' | 'pca'
-let ACTIVE_CATS = new Set(['core','joint','grad_school','emeritus','adjunct','guest']);
+(async function () {
+// ---------- data ----------
+const D = await (await fetch('output/explorer_data.json')).json();
+const P = await (await fetch('output/papers.json')).json();
+let EXTERNAL = []; try { const r = await fetch('output/external.json'); if (r.ok) EXTERNAL = await r.json(); } catch (e) {}
+let ABS = null;
+const F = D.faculty, N = F.length;
+F.forEach((f, i) => { f.i = i; });
+const CATS = ['Core', 'Joint', 'Professors of the Graduate School', 'Emeritus', 'Lecturers', 'Adjunct'];
+const CAT_SHORT = { 'Core': 'Core', 'Joint': 'Joint', 'Professors of the Graduate School': 'Grad School', 'Emeritus': 'Emeritus', 'Lecturers': 'Lecturer', 'Adjunct': 'Adjunct' };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const catColor = c => css('--s' + (CATS.indexOf(c) + 1 || 8));
+const FINE = D.areas, GROUPS = D.groups || D.areas;
+let gran = 'coarse';
+try { gran = localStorage.getItem('gran') || 'coarse'; } catch (e) {}
+const AR = () => gran === 'coarse' ? GROUPS : FINE;
+const pArea = p => gran === 'coarse' ? (p.g != null ? p.g : p.a) : p.a;
+const fProfile = f => gran === 'coarse' ? (f.group_profile || f.area_profile) : f.area_profile;
+const hueFine = d3.scaleOrdinal().domain(FINE.map(a => a.id)).range(FINE.map((a, i) => d3.interpolateRainbow((i * 0.618033988749895) % 1)));
+const hueCoarse = d3.scaleOrdinal().domain(GROUPS.map(a => a.id)).range(GROUPS.map((a, i) => d3.interpolateRainbow((i * 0.618033988749895) % 1)));
+const areaColor = id => id < 0 || id == null ? css('--text-3') : (gran === 'coarse' ? hueCoarse(id) : hueFine(id));
+const AREAS = new Proxy({}, { get: (_, k) => AR()[k] });
+function setGran(g) { gran = g; try { localStorage.setItem('gran', g); } catch (e) {} F.forEach(f => { f.dom_area = dominantArea(f); }); document.querySelectorAll('.granSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === g)); rerenderAll(); }
+const fmt = d3.format(','), fmt2 = d3.format('.2f'), fmt3 = d3.format('.3f');
+const pctLabel = p => p == null ? '–' : `${Math.round(p * 100)}th pct`;
+const tip = document.getElementById('tip');
+function showTip(html, ev) { tip.innerHTML = html; tip.style.display = 'block'; moveTip(ev); }
+function moveTip(ev) { const x = ev.clientX + 14, y = ev.clientY + 14; tip.style.left = Math.min(x, innerWidth - tip.offsetWidth - 10) + 'px'; tip.style.top = Math.min(y, innerHeight - tip.offsetHeight - 10) + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+const byIdx = new Map(F.map(f => [f.i, f]));
+const facPapers = F.map(() => []);
+P.forEach((p, k) => { p.k = k; p.f.forEach(fi => facPapers[fi].push(k)); });
+const dominantArea = f => { const pr = fProfile(f); return pr && pr.length ? pr.reduce((a, b) => b[1] > a[1] ? b : a)[0] : -1; };
+F.forEach(f => { f.dom_area = dominantArea(f); });
 
-function buildCatToggles() {
-  const counts = {};
-  G.nodes.faculty.forEach(f => counts[f.category] = (counts[f.category]||0)+1);
-  const container = document.getElementById('cat-toggles');
-  container.innerHTML = '';
+document.querySelectorAll('.granSeg button').forEach(b => { b.onclick = () => setGran(b.dataset.v); b.classList.toggle('active', b.dataset.v === gran); });
+// ---------- theme ----------
+const themeBtn = document.getElementById('themeBtn');
+try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+themeBtn.onclick = () => { const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); const nx = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = nx; try { localStorage.setItem('theme', nx); } catch (e) {} rerenderAll(); };
 
-  // Define display order
-  const order = ['core','joint','grad_school','emeritus','adjunct','guest'];
-  const orderedCats = order.filter(c => counts[c]);
+// ---------- nav ----------
+let currentView = 'map';
+const renderers = {};
+function showView(v) { currentView = v; document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v)); document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + v)); if (renderers[v]) renderers[v](); try { history.replaceState(null, '', '#' + v); } catch (e) {} }
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => showView(b.dataset.view));
+function rerenderAll() { Object.values(renderers).forEach(r => r()); if (selected != null) openPanel(selected); }
+function seg(id, cb) { const el = document.getElementById(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.remove('active')); b.classList.add('active'); cb(b.dataset.v); }); return () => el.querySelector('button.active').dataset.v; }
 
-  orderedCats.forEach(cat => {
-    const n = counts[cat];
-    const color = CAT_COLOR[cat]||'#888';
-    const label = CAT_LABEL[cat]||cat;
-    const isGuest = cat === 'guest';
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;user-select:none';
-    row.innerHTML = `
-      <input type="checkbox" id="ct_${cat}" ${ACTIVE_CATS.has(cat)?'checked':''} style="accent-color:${color}">
-      <div style="width:7px;height:7px;border-radius:50%;background:${isGuest?'none':''+color};border:${isGuest?'1.5px dashed var(--green)':'none'};flex-shrink:0"></div>
-      <label for="ct_${cat}" style="cursor:pointer;font-family:var(--mono);font-size:10px;color:${isGuest?'var(--green)':'var(--muted)'};flex:1">${label}</label>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${n}</span>`;
-    row.querySelector('input').addEventListener('change', ev => {
-      ev.target.checked ? ACTIVE_CATS.add(cat) : ACTIVE_CATS.delete(cat);
-      drawScatter();
-      renderTable();
-    });
-    container.appendChild(row);
-  });
-}
-
-const CAT_COLOR = {
-  core:'var(--c-core)', joint:'var(--c-joint)', grad_school:'var(--c-grad_school)',
-  emeritus:'var(--c-emeritus)', adjunct:'var(--c-adjunct)',
-  guest:'var(--green)',
-};
-const CAT_LABEL = {
-  core:'Core', joint:'Joint', grad_school:'Grad School Prof',
-  emeritus:'Emeritus', adjunct:'Adjunct', guest:'Added Researcher',
-};
-
-// ── File loading ───────────────────────────────────────────────────────────────
-// Auto-fetch knowledge_graph.json on load
-async function autoLoad() {
-  const sub    = document.getElementById('dz-sub');
-  const bar    = document.getElementById('load-bar');
-  const status = document.getElementById('load-status');
-  let data;
-  try {
-    sub.textContent = 'Fetching knowledge_graph.json…';
-    bar.style.width = '30%';
-    const res = await fetch('knowledge_graph.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    bar.style.width = '60%';
-    sub.textContent = 'Parsing data…';
-    data = await res.json();
-    bar.style.width = '90%';
-    sub.textContent = 'Rendering…';
-    await new Promise(r => setTimeout(r, 50));
-    bar.style.width = '100%';
-    status.textContent = '';
-  } catch(err) {
-    sub.textContent = `Could not load knowledge_graph.json — ${err.message}`;
-    bar.style.background = 'var(--red)';
-    bar.style.width = '100%';
-    status.textContent = 'Load failed';
-    return;
-  }
-  // Init outside try/catch so render errors don't show "Load failed"
-  init(data);
-}
-
-autoLoad();
-
-// ── Init ───────────────────────────────────────────────────────────────────────
-function init(data) {
-  G = data;
-
-  // Build lookup maps
-  FAC_BY_ID = Object.fromEntries(G.nodes.faculty.map(f => [f.id, f]));
-  PUB_BY_ID = Object.fromEntries(G.nodes.publications.map(p => [p.id, p]));
-  FAC_PUBS  = {};
-  G.edges.faculty_authored.forEach(e => {
-    if (!FAC_PUBS[e.from]) FAC_PUBS[e.from] = [];
-    if (PUB_BY_ID[e.to]) FAC_PUBS[e.from].push(PUB_BY_ID[e.to]);
-  });
-  G.nodes.faculty.forEach(f => { PUB_COUNT[f.id] = (FAC_PUBS[f.id]||[]).length; });
-
-  computeImpact();
-
-  document.getElementById('s-fac').textContent = G.nodes.faculty.length;
-  document.getElementById('s-pub').textContent = G.nodes.publications.length.toLocaleString();
-  document.getElementById('s-jrn').textContent = G.nodes.journals.length.toLocaleString();
-  document.getElementById('drop-zone').style.display = 'none';
-
-  // Populate pub faculty filter
-  const ff = document.getElementById('pub-fac-filter');
-  ff.innerHTML = '<option value="">All faculty</option>';
-  G.nodes.faculty.sort((a,b) => a.name.localeCompare(b.name))
-    .forEach(f => { const o = document.createElement('option'); o.value=f.id; o.textContent=f.name; ff.appendChild(o); });
-
-  // Populate pub year filter
-  const yf = document.getElementById('pub-year-filter');
-  const years = [...new Set(G.nodes.publications.map(p=>p.year).filter(Boolean))].sort().reverse();
-  years.forEach(y => { const o = document.createElement('option'); o.value=y; o.textContent=y; yf.appendChild(o); });
-
-  drawScatter();
-  buildCatToggles();
-  renderTable();
-  renderPubs();
-  renderCompare();
-}
-
-// ── Impact score ───────────────────────────────────────────────────────────────
-function computeImpact() {
-  const fac = G.nodes.faculty;
-  const hv = fac.map(f => f.h_index||0);
-  const cv = fac.map(f => f.total_citations||0);
-  const pv = fac.map(f => PUB_COUNT[f.id]||0);
-  const norm = (arr, v) => { const mx = Math.max(...arr); return mx>0?v/mx:0; };
-  fac.forEach((f,i) => { IMPACT[f.id] = (norm(hv,hv[i])+norm(cv,cv[i])+norm(pv,pv[i]))/3; });
-}
-const nodeR = f => 6 + IMPACT[f.id]*18;
-
-// ── Nav ────────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    VIEW = btn.dataset.view;
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-'+VIEW).classList.add('active');
-    if (VIEW==='scatter' && G) drawScatter();
-  });
-});
-
-// ── RESEARCH SPACE ─────────────────────────────────────────────────────────────
-function setLayout(mode) {
-  LAYOUT = mode;
-  document.getElementById('btn-umap').classList.toggle('on', mode==='umap');
-  document.getElementById('btn-pca').classList.toggle('on', mode==='pca');
-  drawScatter();
-}
-
-function drawScatter() {
-  if (!G) return;
-  const svg = d3.select('#gsvg');
-  svg.selectAll('*').remove();
-  const { width, height } = document.getElementById('view-scatter').getBoundingClientRect();
-  const g = svg.append('g');
-  const zoom = d3.zoom().scaleExtent([.05,12]).on('zoom', e => g.attr('transform', e.transform));
-  svg.call(zoom);
-  document.getElementById('btn-reset').onclick = () =>
-    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(width*.05, height*.05).scale(.9));
-
-  const fac = G.nodes.faculty.filter(f => ACTIVE_CATS.has(f.category));
-
-  // Show layout toggle if UMAP is available
-  const hasUmap = G.meta?.has_umap && fac.some(f => f.umap_x !== undefined);
-  const hasPca  = fac.some(f => f.pca_x !== undefined);
-  const toggle  = document.getElementById('layout-toggle');
-  toggle.style.display = (hasUmap && hasPca) ? 'flex' : 'none';
-
-  // Pick coordinate fields based on active layout
-  const xField = (LAYOUT === 'umap' && hasUmap) ? 'umap_x' : 'pca_x';
-  const yField = (LAYOUT === 'umap' && hasUmap) ? 'umap_y' : 'pca_y';
-  const hasLayout = fac.some(f => f[xField] !== undefined);
-
-  let getX, getY;
-  if (hasLayout) {
-    const xs = fac.filter(f=>f[xField]!=null).map(f=>f[xField]);
-    const ys = fac.filter(f=>f[yField]!=null).map(f=>f[yField]);
-    const pad = 80;
-    const xsc = d3.scaleLinear().domain([d3.min(xs),d3.max(xs)]).range([pad, width-pad]);
-    const ysc = d3.scaleLinear().domain([d3.min(ys),d3.max(ys)]).range([pad, height-pad]);
-    getX = f => xsc(f[xField]??0);
-    getY = f => ysc(f[yField]??0);
-  } else {
-    fac.forEach(f => { if(!f._rx) { f._rx=Math.random()*(width-160)+80; f._ry=Math.random()*(height-160)+80; } });
-    getX = f => f._rx; getY = f => f._ry;
-  }
-
-  // Nodes
-  const node = g.append('g').selectAll('g.sn')
-    .data(fac, d=>d.id).join('g').attr('class','sn')
-    .attr('transform', f=>`translate(${getX(f)},${getY(f)})`)
-    .style('cursor','pointer')
-    .call(d3.drag()
-      .on('start', (e,d) => { d._dragging=true; })
-      .on('drag',  (e,d) => {
-        if(hasLayout) {
-          d[xField] = (d[xField]||0) + e.dx / Math.max((width-160) / Math.max(d3.max(fac.filter(f=>f[xField]!=null).map(f=>f[xField])) - d3.min(fac.filter(f=>f[xField]!=null).map(f=>f[xField])), 1), 1);
-          d[yField] = (d[yField]||0) + e.dy / Math.max((height-160) / Math.max(d3.max(fac.filter(f=>f[yField]!=null).map(f=>f[yField])) - d3.min(fac.filter(f=>f[yField]!=null).map(f=>f[yField])), 1), 1);
-        } else { d._rx=e.x; d._ry=e.y; }
-        d3.select(e.sourceEvent.target.closest('g.sn')).attr('transform',`translate(${e.x},${e.y})`);
-        g.selectAll('text.scatter-label').filter(dd=>dd.fac?.id===d.id).attr('x',e.x).attr('y',e.y-nodeR(d)-4);
-      })
-      .on('end', (e,d) => { d._dragging=false; })
-    )
-    .on('click', (e,d) => { e.stopPropagation(); openDetail(d); })
-    .on('mouseover', (e,d) => showTip(e,d))
-    .on('mouseout', hideTip);
-
-  node.append('circle')
-    .attr('r', f=>nodeR(f))
-    .attr('fill', f=>CAT_COLOR[f.category]||'#888')
-    .attr('fill-opacity', f => f.is_guest ? 0.25 : 0.85)
-    .attr('stroke', f => f.is_guest ? 'var(--green)' : '#060a12')
-    .attr('stroke-width', f => f.is_guest ? 2 : 1.5)
-    .attr('stroke-dasharray', f => f.is_guest ? '4,3' : null);
-
-  // Guest nodes get an additional outer ring to make them stand out
-  node.filter(f => f.is_guest).append('circle')
-    .attr('r', f => nodeR(f) + 5)
-    .attr('fill', 'none')
-    .attr('stroke', 'var(--green)')
-    .attr('stroke-width', 1.5)
-    .attr('stroke-dasharray', '4,3')
-    .attr('stroke-opacity', 0.6);
-
-  // Labels with collision avoidance
-  const labelData = fac.map(f => ({
-    fac:f, x:getX(f), y:getY(f)-nodeR(f)-5, nx:getX(f), ny:getY(f), r:nodeR(f)
-  }));
-  const lsim = d3.forceSimulation(labelData)
-    .force('collide', d3.forceCollide(18))
-    .force('anchor', () => { labelData.forEach(d => { d.vx+=(d.nx-d.x)*.15; d.vy+=(d.ny-12-d.r-d.y)*.15; }); })
-    .stop();
-  for(let i=0;i<200;i++) lsim.tick();
-
-  const labels = g.append('g').selectAll('text.scatter-label')
-    .data(labelData, d=>d.fac.id).join('text')
-    .attr('class','scatter-label')
-    .attr('text-anchor','middle')
-    .attr('x', d=>d.x).attr('y', d=>d.y)
-    .text(d=>d.fac.name.split(' ').slice(-1)[0]);
-
-  // Leader lines
-  g.append('g').selectAll('line.leader')
-    .data(labelData).join('line').attr('class','leader')
-    .attr('x1',d=>d.x).attr('y1',d=>d.y+2)
-    .attr('x2',d=>d.nx).attr('y2',d=>d.ny-d.r)
-    .attr('stroke','var(--muted)').attr('stroke-width',.5)
-    .attr('stroke-opacity', d => { const dx=d.x-d.nx,dy=d.y-(d.ny-d.r-5); return Math.sqrt(dx*dx+dy*dy)>20?.4:0; });
-
-  svg.on('click', () => { closeDetail(); labels.classed('dim',false).classed('hi',false); node.selectAll('circle').attr('fill-opacity',.85); });
-
-  // Search
-  document.getElementById('scatter-search').oninput = function() {
-    const q = this.value.toLowerCase();
-    labels.classed('dim', d => !!q && !d.fac.name.toLowerCase().includes(q) && !(d.fac.interests||[]).some(i=>i.toLowerCase().includes(q)));
-    labels.classed('hi',  d => !!q && (d.fac.name.toLowerCase().includes(q) || (d.fac.interests||[]).some(i=>i.toLowerCase().includes(q))));
-    node.selectAll('circle').attr('fill-opacity', d => {
-      if(!q) return .85;
-      return d.name?.toLowerCase().includes(q)||(d.interests||[]).some(i=>i.toLowerCase().includes(q)) ? 1 : .15;
-    });
-  };
-
-  svg.call(zoom.transform, d3.zoomIdentity.translate(width*.05, height*.05).scale(.9));
-}
-
-function showTip(event, d) {
-  const tt = document.getElementById('tooltip');
-  tt.innerHTML = `<div style="font-weight:600;margin-bottom:4px">${d.name}</div>
-    ${d.h_index?`<div style="color:var(--muted)">h=${d.h_index} · ${(d.total_citations||0).toLocaleString()} citations</div>`:''}
-    ${(d.interests||[]).length?`<div style="color:var(--cyan);margin-top:3px;font-size:10px">${(d.interests||[]).slice(0,3).join(', ')}</div>`:''}`;
-  tt.style.display='block';
-  const wrap = document.getElementById('view-scatter').getBoundingClientRect();
-  let x=event.clientX-wrap.left+12, y=event.clientY-wrap.top+12;
-  if(x+270>wrap.width) x-=280; if(y+100>wrap.height) y-=110;
-  tt.style.left=x+'px'; tt.style.top=y+'px';
-}
-function hideTip() { document.getElementById('tooltip').style.display='none'; }
-
-function openDetail(f) {
-  SEL_FAC = f;
-  const pubs = (FAC_PUBS[f.id]||[]).sort((a,b)=>(b.citation_count||0)-(a.citation_count||0));
-  const sim = (G.edges.faculty_similar||[])
-    .filter(e=>e.from===f.id||e.to===f.id)
-    .map(e=>({fac:FAC_BY_ID[e.from===f.id?e.to:e.from],sim:e.similarity}))
-    .filter(x=>x.fac).sort((a,b)=>b.sim-a.sim).slice(0,8);
-
-  document.getElementById('d-badge').innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${CAT_COLOR[f.category]||'#888'}"></span> ${(CAT_LABEL[f.category]||'').toUpperCase()}`;
-  document.getElementById('d-name').textContent = f.name;
-  document.getElementById('d-affil').textContent = f.affiliation||'UC Berkeley';
-  document.getElementById('d-links').innerHTML = `
-    ${f.openalex_url?`<a class="ext-link" href="${f.openalex_url}" target="_blank">↗ OpenAlex</a>`:''}
-    ${f.profile_url?`<a class="ext-link" href="${f.profile_url}" target="_blank">↗ Faculty Page</a>`:''}`;
-  document.getElementById('d-body').innerHTML = `
+// ---------- selection & panel ----------
+let selected = null;
+const panel = document.getElementById('panel'), panelInner = document.getElementById('panelInner');
+function openPanel(i) {
+  selected = i; const f = F[i]; panel.classList.add('open');
+  const nb = f.neighbors.map(([j, s, pct]) => `<div class="nb" onclick="window.__sel(${j})" title="cosine ${s.toFixed(3)}; higher than ${((pct || 0) * 100).toFixed(0)}% of all faculty pairs"><span>${F[j].name}</span><span class="num">${s.toFixed(3)}</span><div class="bar"><i style="width:${(pct || 0) * 100}%"></i></div></div>`).join('');
+  const co = f.coauthors.slice(0, 8).map(([j, n]) => `<div class="nb" onclick="window.__sel(${j})"><span>${F[j].name}</span><span class="num">${n}</span><div class="bar"><i style="width:${Math.min(100, n / (f.coauthors[0][1] || 1) * 100)}%"></i></div></div>`).join('') || '<span class="muted small">No joint papers with other ME faculty.</span>';
+  const areas = (fProfile(f) || []).slice().sort((a, b) => b[1] - a[1]).slice(0, 6).map(([a, n]) => `<div class="fbar" onclick="window.__showArea(${a})"><span style="display:flex;gap:6px;align-items:center"><i class="sw" style="background:${areaColor(a)}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${AREAS[a].label}</span></span><div class="bar"><i style="width:${n / f.n_works * 100}%;background:${areaColor(a)}"></i></div><span class="num">${n}</span></div>`).join('');
+  const topics = f.top_topics.slice(0, 8).map(([t, n]) => `<span class="chip" title="${n} papers">${t}</span>`).join('');
+  const kws = f.top_keywords.slice(0, 10).map(([t]) => `<span class="chip">${t}</span>`).join('');
+  const venues = f.top_venues.slice(0, 5).map(([v, n]) => `<div class="small">${v} <span class="muted">(${n})</span></div>`).join('');
+  const yrs = f.years || []; const ymin = yrs.length ? yrs[0][0] : 0, ymax = 2026; const ymaxN = d3.max(yrs, d => d[1]) || 1;
+  const spark = yrs.length ? `<svg width="340" height="46" style="display:block;margin-top:4px">${yrs.map(([y, n]) => `<rect x="${(y - ymin) / (ymax - ymin + 1) * 340}" y="${46 - n / ymaxN * 40}" width="${Math.max(2, 340 / (ymax - ymin + 1) - 1)}" height="${n / ymaxN * 40}" fill="var(--accent)" rx="1"><title>${y}: ${n} papers</title></rect>`).join('')}<text x="0" y="45" font-size="9" fill="var(--text-3)">${ymin}</text><text x="340" y="45" font-size="9" text-anchor="end" fill="var(--text-3)">${ymax}</text></svg>` : '';
+  const conf = f.match_confidence || 'high';
+  panelInner.innerHTML = `
+    <button class="iconbtn closebtn" onclick="window.__closePanel()">✕</button>
+    <h2>${f.name}</h2>
+    <div class="title">${f.title || ''} · <span class="pill">${CAT_SHORT[f.category] || f.category}</span></div>
     <div class="stat-row">
-      <div class="stat-card"><div class="sc-val">${f.h_index??'—'}</div><div class="sc-lbl">h-index</div></div>
-      <div class="stat-card"><div class="sc-val">${(f.total_citations||0).toLocaleString()}</div><div class="sc-lbl">Citations</div></div>
-      <div class="stat-card"><div class="sc-val">${pubs.length}</div><div class="sc-lbl">Pubs</div></div>
+      <div class="stat"><div class="v">${fmt(f.n_works)}</div><div class="k">works</div></div>
+      <div class="stat"><div class="v">${fmt(f.total_citations)}</div><div class="k">citations</div></div>
+      <div class="stat"><div class="v">${f.h_index}</div><div class="k">h-index</div></div>
+      <div class="stat"><div class="v">${f.first_year || '–'}–${String(f.last_year || '').slice(2)}</div><div class="k">active</div></div>
     </div>
-    ${(f.interests||[]).length?`<div><div class="sec-lbl">Research Topics</div><div class="tags">${(f.interests||[]).map(i=>`<span class="tag">${i}</span>`).join('')}</div></div>`:''}
-    ${sim.length?`<div><div class="sec-lbl">Most Similar</div><div class="sim-list">${sim.map(({fac:c,sim:s})=>`
-      <div class="sim-row" onclick="openDetail(FAC_BY_ID['${c.id}'])">
-        <div class="sim-dot" style="background:${CAT_COLOR[c.category]||'#888'}"></div>
-        <span>${c.name}</span>
-        <span class="sim-pct">${(s*100).toFixed(0)}%</span>
-      </div>`).join('')}</div></div>`:''}
-    <div><div class="sec-lbl">Top Publications</div><div class="pub-list-detail">${pubs.slice(0,20).map(p=>`
-      <div class="pub-card-sm" onclick="this.classList.toggle('open')">
-        <div class="pub-title-sm">${p.title}</div>
-        <div class="pub-meta-sm">${p.journal?p.journal+' · ':''}<span class="pub-cites-sm">${p.citation_count?'★'+p.citation_count.toLocaleString():''}</span> ${p.year||''}</div>
-        ${p.abstract?`<div class="pub-abstract-sm">${p.abstract}</div>`:''}
-      </div>`).join('')}</div></div>`;
-  document.getElementById('fac-detail').classList.add('open');
+    ${spark}
+    ${f.research_description ? `<h3>Research description (me.berkeley.edu)</h3><div class="small">${f.research_description.slice(0, 600)}${f.research_description.length > 600 ? '…' : ''}</div>` : ''}
+    <h3>Research areas (from paper clusters)</h3>${areas || '<span class="muted small">–</span>'}
+    <h3>OpenAlex topics</h3>${topics || '<span class="muted small">–</span>'}
+    ${kws ? `<h3>Keywords</h3>${kws}` : ''}
+    <h3>Most similar faculty <span class="muted" style="text-transform:none;letter-spacing:0">(cosine · bar = percentile among all pairs)</span></h3>${nb || '<span class="muted small">no vector</span>'}
+    <h3>Co-authors in the department</h3>${co}
+    <h3>Profile metrics</h3>
+    <dl class="kv"><dt>Breadth (spread of own papers)</dt><dd>${f.breadth != null ? `${pctLabel(f.breadth_pct)} <span class="muted">(${f.breadth.toFixed(4)})</span>` : '–'}</dd><dt>Research drift (career→recent)</dt><dd>${f.drift != null ? `${pctLabel(f.drift_pct)} <span class="muted">(${f.drift.toFixed(4)})</span>` : '–'}</dd><dt>Centrality (mean similarity to dept.)</dt><dd>${f.centrality != null ? `${pctLabel(f.centrality_pct)} <span class="muted">(${f.centrality.toFixed(4)})</span>` : '–'}</dd><dt>Area entropy</dt><dd>${f.area_entropy != null ? fmt2(f.area_entropy) : '–'}</dd><dt>Papers with abstracts</dt><dd>${f.n_with_abstract} / ${f.n_works}</dd></dl>
+    <h3>Top venues</h3>${venues}
+    <h3>Identity</h3>
+    <div class="small">OpenAlex: ${f.openalex_ids.map(id => `<a href="https://openalex.org/${id}" target="_blank" rel="noopener">${id}</a>`).join(', ') || '–'} <span class="pill ${conf}">${conf} confidence</span></div>
+    ${f.match_notes ? `<div class="small muted" style="margin-top:4px">${f.match_notes}</div>` : ''}
+    <div class="small" style="margin-top:6px"><a href="${f.profile_url}" target="_blank" rel="noopener">Department profile ↗</a> · <a href="#" onclick="window.__pubsFor(${i});return false;">Publications</a> · <a href="#" onclick="window.__cmpAdd(${i});return false;">Add to compare</a> · <a href="#" onclick="window.__cloudFor(${i});return false;">Show papers in cloud</a></div>`;
+  if (renderers[currentView]) renderers[currentView]();
 }
-function closeDetail() { document.getElementById('fac-detail').classList.remove('open'); SEL_FAC=null; }
-document.getElementById('detail-close').addEventListener('click', closeDetail);
+window.__sel = i => openPanel(i);
+window.__closePanel = () => { selected = null; panel.classList.remove('open'); if (renderers[currentView]) renderers[currentView](); };
 
-// ── FACULTY TABLE ──────────────────────────────────────────────────────────────
-function renderTable() {
-  if (!G) return;
-  const q     = document.getElementById('table-search').value.toLowerCase();
-  const cat   = document.getElementById('table-cat').value;
-  let rows = G.nodes.faculty.filter(f =>
-    (!cat || f.category===cat) &&
-    (!q || f.name.toLowerCase().includes(q) || (f.interests||[]).some(i=>i.toLowerCase().includes(q)))
-  );
-  rows.sort((a,b) => {
-    let va = SORT_COL==='pubs' ? PUB_COUNT[a.id]||0 : (a[SORT_COL]||0);
-    let vb = SORT_COL==='pubs' ? PUB_COUNT[b.id]||0 : (b[SORT_COL]||0);
-    if (SORT_COL==='name' || SORT_COL==='category') { va=String(va); vb=String(vb); return SORT_DIR*(va.localeCompare(vb)); }
-    return SORT_DIR*(vb-va);
-  });
+// ---------- search ----------
+const searchEl = document.getElementById('search'), sr = document.getElementById('searchResults');
+searchEl.oninput = () => {
+  const q = searchEl.value.trim().toLowerCase(); if (q.length < 2) { sr.style.display = 'none'; return; }
+  const out = [];
+  F.forEach(f => { if (f.name.toLowerCase().includes(q)) out.push(`<div onclick="window.__sel(${f.i});document.getElementById('searchResults').style.display='none'">${f.name}<small>${CAT_SHORT[f.category]}</small></div>`); });
+  F.forEach(f => { if (!f.name.toLowerCase().includes(q)) { const hit = (f.top_topics || []).find(t => t[0].toLowerCase().includes(q)) || (f.top_keywords || []).find(t => t[0].toLowerCase().includes(q)) || ((f.research_description || '').toLowerCase().includes(q) ? ['research description'] : null); if (hit) out.push(`<div onclick="window.__sel(${f.i});document.getElementById('searchResults').style.display='none'">${f.name}<small>${hit[0]}</small></div>`); } });
+  AR().forEach(a => { if (a.label.toLowerCase().includes(q) || a.terms.some(t => t.includes(q))) out.push(`<div onclick="window.__showArea(${a.id});document.getElementById('searchResults').style.display='none'">Area: ${a.label}<small>${a.size} papers</small></div>`); });
+  let np = 0; for (const p of P) { if (np >= 8) break; if ((p.t || '').toLowerCase().includes(q)) { np++; out.push(`<div onclick="window.__pubsQ('${q.replace(/'/g, '')}');document.getElementById('searchResults').style.display='none'">${p.t.slice(0, 70)}<small>${p.y} · ${p.f.map(i => F[i].name.split(' ').pop()).join(', ')}</small></div>`); } }
+  if (np >= 8) out.push(`<div onclick="window.__pubsQ('${q.replace(/'/g, '')}');document.getElementById('searchResults').style.display='none'"><i>More publications…</i></div>`);
+  sr.innerHTML = out.slice(0, 30).join('') || '<div class="muted">no matches</div>'; sr.style.display = 'block';
+};
+document.addEventListener('click', e => { if (!sr.contains(e.target) && e.target !== searchEl) sr.style.display = 'none'; });
 
-  document.getElementById('table-count').textContent = `${rows.length} faculty`;
-  const tbody = document.getElementById('table-body');
-  tbody.innerHTML = rows.map(f => `
-    <tr onclick="switchToFaculty('${f.id}')">
-      <td class="td-name" style="color:${CAT_COLOR[f.category]||'var(--text)'}">${f.name}</td>
-      <td class="td-cat" style="color:${CAT_COLOR[f.category]||'var(--muted)'}">${CAT_LABEL[f.category]||f.category}</td>
-      <td class="td-num">${f.h_index??'—'}</td>
-      <td class="td-num">${(f.total_citations||0).toLocaleString()}</td>
-      <td class="td-num">${PUB_COUNT[f.id]||0}</td>
-      <td class="td-topics">${(f.interests||[]).slice(0,4).join(' · ')}</td>
-    </tr>`).join('');
-
-  // Sort headers
-  document.querySelectorAll('#faculty-table th').forEach(th => {
-    th.classList.toggle('sorted', th.dataset.col===SORT_COL);
-    const arrow = th.querySelector('.sort-arrow');
-    if (th.dataset.col===SORT_COL) arrow.textContent = SORT_DIR===1?'↑':'↓';
-    else arrow.textContent = '↕';
-    th.onclick = () => {
-      if (SORT_COL===th.dataset.col) SORT_DIR*=-1;
-      else { SORT_COL=th.dataset.col; SORT_DIR=-1; }
-      renderTable();
-    };
-  });
+// ---------- MAP ----------
+const mapSvg = d3.select('#mapSvg'), mapWrap = document.getElementById('mapWrap');
+const getLayout = seg('mapLayout', () => renderMap()), getVec = seg('mapVec', () => renderMap());
+['mapColor', 'mapSize', 'mapCoauth', 'mapSim', 'mapLabels'].forEach(id => document.getElementById(id).onchange = () => renderMap());
+let mapZoom = d3.zoomIdentity; const hiddenCats = new Set();
+const mapG = mapSvg.append('g');
+mapSvg.call(d3.zoom().scaleExtent([0.5, 8]).on('zoom', ev => { mapZoom = ev.transform; mapG.attr('transform', mapZoom); }).on('end', () => renderMap()));
+function coords(f, layout, vec) {
+  if (layout === 'paper') return f.paper_map_xy;
+  const key = layout + (vec === 'recent' ? '_recent' : '');
+  return f[key];
 }
-
-function switchToFaculty(id) {
-  VIEW='scatter';
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.view==='scatter'));
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-scatter').classList.add('active');
-  drawScatter();
-  setTimeout(() => openDetail(FAC_BY_ID[id]), 100);
-}
-
-document.getElementById('table-search').addEventListener('input', renderTable);
-document.getElementById('table-cat').addEventListener('change', renderTable);
-
-// ── PUBLICATIONS ───────────────────────────────────────────────────────────────
-let PUB_PAGE = 0;
-const PUB_PAGE_SIZE = 50;
-
-function renderPubs() {
-  if (!G) return;
-  const q    = document.getElementById('pub-search').value.toLowerCase();
-  const facF = document.getElementById('pub-fac-filter').value;
-  const yearF= document.getElementById('pub-year-filter').value;
-  const sort = document.getElementById('pub-sort').value;
-
-  // Build set of pub IDs for selected faculty
-  let allowedPubs = null;
-  if (facF) {
-    allowedPubs = new Set((FAC_PUBS[facF]||[]).map(p=>p.id));
+function renderMap() {
+  const W = mapWrap.clientWidth, H = mapWrap.clientHeight; if (!W) return;
+  const layout = getLayout(), vec = getVec(), colorBy = document.getElementById('mapColor').value, sizeBy = document.getElementById('mapSize').value;
+  const showLabels = document.getElementById('mapLabels').checked;
+  const pts = F.filter(f => f.has_vector && coords(f, layout, 'career') && !hiddenCats.has(f.category));
+  const all = pts.flatMap(f => [coords(f, layout, 'career'), coords(f, layout, 'recent') || coords(f, layout, 'career')]);
+  const pad = 60;
+  const x = d3.scaleLinear().domain(d3.extent(all, d => d[0])).nice().range([pad, W - pad]);
+  const y = d3.scaleLinear().domain(d3.extent(all, d => d[1])).nice().range([H - pad, pad]);
+  const sizeVal = f => sizeBy === 'cites' ? f.total_citations : sizeBy === 'h' ? f.h_index : sizeBy === 'works' ? f.n_works : 1;
+  const r = sizeBy === 'none' ? () => 7 : d3.scaleSqrt().domain([0, d3.max(F, sizeVal)]).range([4, 22]);
+  const driftScale = d3.scaleSequential(d3.interpolateBlues).domain([0, d3.max(F, f => f.drift || 0)]);
+  const breadthScale = d3.scaleSequential(d3.interpolateBlues).domain(d3.extent(F.filter(f => f.breadth != null), f => f.breadth));
+  const color = f => colorBy === 'category' ? catColor(f.category) : colorBy === 'area' ? areaColor(f.dom_area) : colorBy === 'drift' ? (f.drift != null ? driftScale(f.drift) : css('--text-3')) : (f.breadth != null ? breadthScale(f.breadth) : css('--text-3'));
+  mapG.selectAll('*').remove();
+  const pos = f => { const c = coords(f, layout, vec === 'recent' ? 'recent' : 'career') || coords(f, layout, 'career'); return [x(c[0]), y(c[1])]; };
+  // links
+  if (document.getElementById('mapCoauth').checked) {
+    const L = mapG.append('g').attr('stroke', css('--s2')).attr('stroke-opacity', .35);
+    pts.forEach(a => pts.forEach(b => { if (a.i < b.i && D.coauthorship[a.i][b.i] > 0) { const pa = pos(a), pb = pos(b); L.append('line').attr('x1', pa[0]).attr('y1', pa[1]).attr('x2', pb[0]).attr('y2', pb[1]).attr('stroke-width', Math.min(6, 0.6 + Math.sqrt(D.coauthorship[a.i][b.i]))); } }));
   }
+  if (document.getElementById('mapSim').checked) {
+    const L = mapG.append('g').attr('stroke', css('--text-3')).attr('stroke-opacity', .35).attr('stroke-dasharray', '3 3');
+    pts.forEach(a => a.neighbors.slice(0, 3).forEach(([j, s]) => { const b = F[j]; if (!pts.includes(b)) return; const pa = pos(a), pb = pos(b); L.append('line').attr('x1', pa[0]).attr('y1', pa[1]).attr('x2', pb[0]).attr('y2', pb[1]).attr('stroke-width', 1); }));
+  }
+  if (vec === 'drift') {
+    mapSvg.select('defs').remove();
+    mapSvg.append('defs').append('marker').attr('id', 'arrow').attr('viewBox', '0 0 10 10').attr('refX', 9).attr('refY', 5).attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto').append('path').attr('d', 'M0,0 L10,5 L0,10 z').attr('fill', css('--text-2'));
+    const A = mapG.append('g');
+    pts.forEach(f => { const c0 = coords(f, layout, 'career'), c1 = coords(f, layout, 'recent'); if (!c1 || layout === 'paper') return; A.append('line').attr('x1', x(c0[0])).attr('y1', y(c0[1])).attr('x2', x(c1[0])).attr('y2', y(c1[1])).attr('stroke', css('--text-2')).attr('stroke-opacity', .7).attr('stroke-width', 1.4).attr('marker-end', 'url(#arrow)'); A.append('circle').attr('cx', x(c0[0])).attr('cy', y(c0[1])).attr('r', 3).attr('fill', css('--text-3')); });
+  }
+  const nodes = mapG.append('g').selectAll('g').data(pts, f => f.i).join('g').attr('transform', f => `translate(${pos(f)})`).style('cursor', 'pointer')
+    .on('mouseenter', (ev, f) => showTip(`<b>${f.name}</b><span class="sub">${CAT_SHORT[f.category]} · ${fmt(f.n_works)} works · ${fmt(f.total_citations)} citations</span><div style="margin-top:4px">${f.top_topics.slice(0, 3).map(t => t[0]).join(' · ')}</div>${f.dom_area >= 0 ? `<div class="sub">Area: ${AREAS[f.dom_area].label}</div>` : ''}`, ev))
+    .on('mousemove', moveTip).on('mouseleave', hideTip).on('click', (ev, f) => openPanel(f.i));
+  nodes.append('circle').attr('r', f => r(sizeVal(f))).attr('fill', color).attr('fill-opacity', .85).attr('stroke', f => selected === f.i ? css('--text') : css('--surface')).attr('stroke-width', f => selected === f.i ? 3 : 1.5);
+  if (selected != null) { const s = F[selected]; nodes.filter(f => s.neighbors.some(n => n[0] === f.i)).select('circle').attr('stroke', css('--text-2')).attr('stroke-width', 2.5).attr('stroke-dasharray', '2 2'); }
+  if (showLabels) {
+    // greedy label placement: try below / above / right / left, hide if everything collides
+    const placed = [];
+    const shortName = f => f.name.replace(/^(\w)\w*\.? /, '$1. ').replace(/ [A-Z]\. /, ' ');
+    const k = mapZoom.k;
+    pts.slice().sort((a, b) => sizeVal(b) - sizeVal(a)).forEach(f => {
+      const [cx, cy] = pos(f); const rr = r(sizeVal(f)); const txt = shortName(f); const w = txt.length * 6.2 / k, h = 12 / k;
+      const cands = [[cx, cy + rr + 11 / k, 'middle'], [cx, cy - rr - 4 / k, 'middle'], [cx + rr + 4 / k, cy + 4 / k, 'start'], [cx - rr - 4 / k, cy + 4 / k, 'end']];
+      for (const [x0, y0, anchor] of cands) {
+        const bx = anchor === 'middle' ? x0 - w / 2 : anchor === 'start' ? x0 : x0 - w; const box = [bx, y0 - h, bx + w, y0 + 2];
+        const hit = placed.some(b => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3])) || pts.some(o => o !== f && Math.abs(pos(o)[0] - (box[0] + box[2]) / 2) < w / 2 + r(sizeVal(o)) * .6 && Math.abs(pos(o)[1] - (box[1] + box[3]) / 2) < h / 2 + r(sizeVal(o)) * .6);
+        if (!hit) { placed.push(box); f._lbl = [x0, y0, anchor]; return; }
+      }
+      f._lbl = null;
+    });
+    nodes.filter(f => f._lbl).append('text').text(shortName).attr('x', f => f._lbl[0] - pos(f)[0]).attr('y', f => f._lbl[1] - pos(f)[1]).attr('text-anchor', f => f._lbl[2]).attr('font-size', 10.5 / Math.sqrt(k)).attr('fill', css('--text-2')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3).attr('stroke-linejoin', 'round');
+  }
+  // external researchers (pipeline/add_researcher.py) as dashed nodes
+  if (EXTERNAL.length && layout !== 'paper' && vec !== 'drift') {
+    const ex = mapG.append('g').selectAll('g').data(EXTERNAL.filter(e => e[layout])).join('g').attr('transform', e => `translate(${x(e[layout][0])},${y(e[layout][1])})`).style('cursor', 'pointer')
+      .on('mouseenter', (ev, e) => showTip(`<b>${e.name}</b><span class="sub">external · ${e.institutions.join(', ')} · ${e.n_works} works</span><div style="margin-top:4px">Nearest: ${e.neighbors.slice(0, 4).map(n => `${n[0]} (${Math.round(n[2] * 100)}th pct)`).join(', ')}</div>`, ev)).on('mousemove', moveTip).on('mouseleave', hideTip);
+    ex.append('circle').attr('r', 8).attr('fill', css('--surface')).attr('stroke', css('--s6')).attr('stroke-width', 2).attr('stroke-dasharray', '3 2');
+    ex.append('text').text(e => e.name).attr('dy', 20).attr('text-anchor', 'middle').attr('font-size', 10.5).attr('fill', css('--s6')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3);
+  }
+  mapG.attr('transform', mapZoom);
+  // legend
+  const lg = document.getElementById('mapLegend');
+  if (colorBy === 'category') lg.innerHTML = CATS.map(c => `<div class="row ${hiddenCats.has(c) ? 'off' : ''}" data-cat="${c}"><i class="sw" style="background:${catColor(c)}"></i>${c} <span class="muted">(${F.filter(f => f.category === c).length})</span></div>`).join('') + `<div class="hint" style="margin-top:4px">click to hide/show</div>`;
+  else if (colorBy === 'area') lg.innerHTML = AR().map(a => `<div class="row" onclick="window.__showArea(${a.id})"><i class="sw" style="background:${areaColor(a.id)}"></i>${a.label}</div>`).join('');
+  else lg.innerHTML = `<div class="small">${colorBy === 'drift' ? 'Darker = larger shift from career-average to recent work' : 'Darker = broader spread of own papers in embedding space'}</div>`;
+  lg.querySelectorAll('[data-cat]').forEach(el => el.onclick = () => { const c = el.dataset.cat; hiddenCats.has(c) ? hiddenCats.delete(c) : hiddenCats.add(c); renderMap(); });
+}
+renderers.map = renderMap;
 
-  let pubs = G.nodes.publications.filter(p =>
-    (!allowedPubs || allowedPubs.has(p.id)) &&
-    (!yearF || p.year===yearF) &&
-    (!q || p.title?.toLowerCase().includes(q) || p.abstract?.toLowerCase().includes(q))
-  );
-
-  if (sort==='citations') pubs.sort((a,b)=>(b.citation_count||0)-(a.citation_count||0));
-  else if (sort==='year') pubs.sort((a,b)=>(b.year||'').localeCompare(a.year||''));
-  else pubs.sort((a,b)=>a.title?.localeCompare(b.title||'')||0);
-
-  document.getElementById('pub-count').textContent = `${pubs.length.toLocaleString()} papers`;
-
-  // Build faculty reverse lookup
-  const pubFacMap = {};
-  G.edges.faculty_authored.forEach(e => {
-    if (!pubFacMap[e.to]) pubFacMap[e.to]=[];
-    if (FAC_BY_ID[e.from]) pubFacMap[e.to].push(FAC_BY_ID[e.from]);
+// ---------- PAPER CLOUD ----------
+const cloudCanvas = document.getElementById('cloudCanvas'), cloudWrap = document.getElementById('cloudWrap'), cloudSvg = d3.select('#cloudSvg');
+const cloudYear = document.getElementById('cloudYear'), cloudYearLbl = document.getElementById('cloudYearLbl');
+let cloudFac = null, cloudT = d3.zoomIdentity, cloudPlaying = false, cloudHover = null;
+const px = d3.scaleLinear().domain(d3.extent(P, p => p.x)), py = d3.scaleLinear().domain(d3.extent(P, p => p.yy));
+const yearColor = d3.scaleSequential(d3.interpolateViridis).domain([1975, 2026]);
+const citeColor = d3.scaleSequentialLog(d3.interpolateBlues).domain([1, 2000]);
+['cloudColor', 'cloudCum', 'cloudFacPts', 'cloudAreaLbl'].forEach(id => document.getElementById(id).onchange = () => renderCloud());
+cloudYear.oninput = () => renderCloud();
+document.getElementById('cloudPlay').onclick = () => { cloudPlaying = !cloudPlaying; document.getElementById('cloudPlay').textContent = cloudPlaying ? '⏸ pause' : '▶ play'; if (cloudPlaying) { if (+cloudYear.value >= 2026) cloudYear.value = 1975; step(); } function step() { if (!cloudPlaying) return; cloudYear.value = +cloudYear.value + 1; renderCloud(); if (+cloudYear.value >= 2026) { cloudPlaying = false; document.getElementById('cloudPlay').textContent = '▶ play'; return; } setTimeout(step, 350); } };
+d3.select(cloudCanvas).call(d3.zoom().scaleExtent([0.5, 12]).on('zoom', ev => { cloudT = ev.transform; renderCloud(); }));
+let quad = null;
+cloudCanvas.onmousemove = ev => { if (!quad) return; const [mx, my] = d3.pointer(ev); const inv = cloudT.invert([mx, my]); const p = quad.find(inv[0], inv[1], 12 / cloudT.k); cloudHover = p || null; if (p) showTip(`<b>${p.t}</b><span class="sub">${p.y || ''} · ${fmt(p.c)} citations${p.v ? ' · ' + p.v : ''}</span><div style="margin-top:3px">${p.f.map(i => F[i].name).join(', ')}</div><div class="sub">${pArea(p) >= 0 ? AREAS[pArea(p)].label : 'unclustered'}${p.noise ? ' (outlier, nearest area)' : ''}</div>`, ev); else hideTip(); };
+cloudCanvas.onmouseleave = () => { hideTip(); cloudHover = null; };
+cloudCanvas.onclick = () => { if (cloudHover && cloudHover.f.length) openPanel(cloudHover.f[0]); };
+function renderCloud() {
+  const W = cloudWrap.clientWidth, H = cloudWrap.clientHeight; if (!W) return;
+  const dpr = window.devicePixelRatio || 1; cloudCanvas.width = W * dpr; cloudCanvas.height = H * dpr;
+  const ctx = cloudCanvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  { const [x0, x1] = px.domain(), [y0, y1] = py.domain(); const sc = Math.min((W - 60) / (x1 - x0), (H - 60) / (y1 - y0)); const cxm = (x0 + x1) / 2, cym = (y0 + y1) / 2; px.range([W / 2 - sc * (x1 - x0) / 2, W / 2 + sc * (x1 - x0) / 2]); py.range([H / 2 + sc * (y1 - y0) / 2, H / 2 - sc * (y1 - y0) / 2]); }
+  const yr = +cloudYear.value, cum = document.getElementById('cloudCum').checked, mode = document.getElementById('cloudColor').value;
+  cloudYearLbl.textContent = yr <= 1950 ? 'all' : (cum ? '≤ ' + yr : yr);
+  const vis = p => yr <= 1950 || (cum ? (p.y || 0) <= yr : p.y === yr);
+  ctx.save(); ctx.translate(cloudT.x, cloudT.y); ctx.scale(cloudT.k, cloudT.k);
+  const base = Math.max(1.2, 2.2 / Math.sqrt(cloudT.k));
+  const selSet = cloudFac != null ? new Set(facPapers[cloudFac]) : null;
+  const dim = css('--border');
+  P.forEach(p => {
+    const v = vis(p); const X = px(p.x), Y = py(p.yy);
+    let col, rad = base, alpha = .75;
+    if (mode === 'faculty') { if (selSet && selSet.has(p.k)) { col = css('--s2'); rad = base * 1.8; alpha = .95; } else { col = dim; alpha = .5; } }
+    else if (mode === 'year') col = p.y ? yearColor(p.y) : dim;
+    else if (mode === 'cites') col = citeColor(Math.max(1, p.c));
+    else col = areaColor(pArea(p));
+    if (!v) { if (yr > 1950 && !cum) return; col = dim; alpha = .25; }
+    ctx.globalAlpha = alpha; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, Y, rad, 0, 6.283); ctx.fill();
   });
+  if (mode === 'faculty' && selSet) { ctx.globalAlpha = .95; ctx.fillStyle = css('--s2'); P.forEach(p => { if (selSet.has(p.k) && vis(p)) { ctx.beginPath(); ctx.arc(px(p.x), py(p.yy), base * 1.8, 0, 6.283); ctx.fill(); } }); }
+  ctx.restore();
+  quad = d3.quadtree().x(p => px(p.x)).y(p => py(p.yy)).addAll(P.filter(vis));
+  // overlay svg: area labels + faculty centroids
+  cloudSvg.selectAll('*').remove();
+  const g = cloudSvg.append('g').attr('transform', cloudT);
+  if (document.getElementById('cloudAreaLbl').checked && mode !== 'faculty') AR().forEach(a => { g.append('text').attr('x', px(a.centroid_xy[0])).attr('y', py(a.centroid_xy[1])).attr('text-anchor', 'middle').attr('font-size', 11 / cloudT.k).attr('font-weight', 600).attr('fill', css('--text')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3 / cloudT.k).text(a.label); });
+  if (document.getElementById('cloudFacPts').checked) F.filter(f => f.paper_map_xy && !hiddenCats.has(f.category)).forEach(f => { const gg = g.append('g').attr('transform', `translate(${px(f.paper_map_xy[0])},${py(f.paper_map_xy[1])})`).style('pointer-events', 'all').style('cursor', 'pointer').on('click', () => { cloudFac = f.i; document.getElementById('cloudColor').value = 'faculty'; openPanel(f.i); renderCloud(); }).on('mouseenter', ev => showTip(`<b>${f.name}</b><span class="sub">median position of ${f.n_works} papers</span>`, ev)).on('mouseleave', hideTip); gg.append('circle').attr('r', (cloudFac === f.i ? 7 : 4.5) / Math.sqrt(cloudT.k)).attr('fill', cloudFac === f.i ? css('--s2') : css('--text')).attr('stroke', css('--bg')).attr('stroke-width', 1.5 / cloudT.k); if (cloudT.k > 1.6 || cloudFac === f.i) gg.append('text').attr('dy', -7 / cloudT.k).attr('text-anchor', 'middle').attr('font-size', 10 / cloudT.k).attr('fill', css('--text')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3 / cloudT.k).text(f.name.split(' ').pop()); });
+  const lg = document.getElementById('cloudLegend');
+  if (mode === 'area') lg.innerHTML = AR().map(a => `<div class="row" onclick="window.__showArea(${a.id})"><i class="sw" style="background:${areaColor(a.id)}"></i>${a.label} <span class="muted">${a.size}</span></div>`).join('');
+  else if (mode === 'faculty') lg.innerHTML = cloudFac != null ? `<div class="row on"><i class="sw" style="background:${css('--s2')}"></i>${F[cloudFac].name} — ${facPapers[cloudFac].length} papers</div><div class="hint">click a faculty centroid or use "Show papers in cloud" in a profile</div>` : '<div class="hint">Click a faculty centroid to highlight their papers.</div>';
+  else if (mode === 'year') lg.innerHTML = `<div class="small">Publication year: <span style="color:${yearColor(1980)}">1980</span> → <span style="color:${yearColor(2026)}">2026</span></div>`;
+  else lg.innerHTML = `<div class="small">Citations (log scale), darker = more cited</div>`;
+  document.getElementById('cloudHint').textContent = `${fmt(P.filter(vis).length)} papers shown`;
+}
+renderers.cloud = renderCloud;
+window.__cloudFor = i => { cloudFac = i; document.getElementById('cloudColor').value = 'faculty'; showView('cloud'); };
 
-  const show = pubs.slice(0, PUB_PAGE_SIZE * (PUB_PAGE+1));
-  const list = document.getElementById('pubs-list');
-  list.innerHTML = show.map(p => {
-    const authors = (pubFacMap[p.id]||[]);
-    const facTags = authors.map(f => `<span class="pub-fac-tag" style="color:${CAT_COLOR[f.category]||'#888'};border-color:${CAT_COLOR[f.category]||'#888'}" onclick="event.stopPropagation();switchToFaculty('${f.id}')">${f.name}</span>`).join('');
-    return `<div class="pub-card-full" onclick="this.classList.toggle('open')">
-      <div class="pub-title-full">${p.title}</div>
-      ${p.journal?`<div class="pub-venue-full">${p.journal}</div>`:''}
-      <div class="pub-row-full">
-        <span class="pub-year-full">${p.year||''}</span>
-        ${p.citation_count?`<span class="pub-cites-full">★ ${p.citation_count.toLocaleString()}</span>`:''}
-      </div>
-      ${p.abstract?`<div class="pub-abstract-full">${p.abstract}</div>`:''}
-      <div class="pub-fac-tags">${facTags}</div>
-    </div>`;
+// ---------- AREAS ----------
+function renderAreas() {
+  const sortBy = document.getElementById('areaSort').value;
+  const arr = AR().slice().sort((a, b) => sortBy === 'size' ? b.size - a.size : sortBy === 'recent' ? b.median_year - a.median_year : b.mean_citations - a.mean_citations);
+  const yext = [1975, 2026];
+  document.getElementById('areaCards').innerHTML = arr.map(a => {
+    const ys = new Map(a.years); const mx = d3.max(a.years, d => d[1]) || 1;
+    const spark = `<svg width="100%" height="34" viewBox="0 0 300 34" preserveAspectRatio="none">${d3.range(yext[0], yext[1] + 1).map(y => { const n = ys.get(y) || 0; return `<rect x="${(y - yext[0]) / 52 * 300}" y="${34 - n / mx * 30}" width="4.8" height="${n / mx * 30}" fill="${areaColor(a.id)}"><title>${y}: ${n}</title></rect>`; }).join('')}</svg>`;
+    const fac = a.faculty.slice(0, 7).map(([s, n]) => { const f = F.find(x => x.slug === s); return `<div class="fbar" onclick="window.__sel(${f.i})"><span>${f.name}</span><div class="bar"><i style="width:${n / a.faculty[0][1] * 100}%;background:${areaColor(a.id)}"></i></div><span class="num">${n}</span></div>`; }).join('');
+    return `<div class="card area-card" id="area-${a.id}"><h4><i class="sw" style="background:${areaColor(a.id)};display:inline-block;margin-right:6px"></i>${a.label}</h4><div class="meta">${fmt(a.size)} papers · ${a.faculty.length} faculty · median year ${a.median_year} · ${a.mean_citations} mean citations${a.noise_fraction > 0 ? ` · ${(a.noise_fraction * 100).toFixed(0)}% outliers folded in` : ''}</div><div class="terms">${a.terms.join(' · ')}</div><div class="small muted" style="margin-bottom:6px">OpenAlex: ${a.top_topics.slice(0, 3).map(t => t[0]).join('; ')}</div>${gran === 'coarse' && a.areas ? `<div style="margin-bottom:6px">${a.areas.map(id => FINE[id]).sort((x, y) => y.size - x.size).map(sa => `<span class="chip" title="${sa.size} papers: ${sa.terms.join(', ')}"><i class="sw" style="background:${hueFine(sa.id)};display:inline-block;margin-right:4px;width:7px;height:7px"></i>${sa.label} <span class="muted">${sa.size}</span></span>`).join('')}</div>` : ''}${spark}<div class="hint" style="margin:0 0 6px">papers per year 1975–2026</div>${fac}${a.faculty.length > 7 ? `<div class="hint">+${a.faculty.length - 7} more</div>` : ''}<div style="margin-top:8px"><a href="#" onclick="window.__pubsArea(${a.id});return false;">Browse papers</a> · <a href="#" onclick="window.__cloudArea(${a.id});return false;">Show in cloud</a></div></div>`;
   }).join('');
-
-  if (pubs.length > show.length) {
-    const btn = document.createElement('button');
-    btn.className='ctrl-btn'; btn.style.alignSelf='center'; btn.style.margin='8px auto';
-    btn.textContent=`Load more (${pubs.length-show.length} remaining)`;
-    btn.onclick = () => { PUB_PAGE++; renderPubs(); };
-    list.appendChild(btn);
-  }
+  // heatmap
+  const norm = document.getElementById('heatNorm').value;
+  const fac = F.filter(f => f.n_works >= 5).slice().sort((a, b) => CATS.indexOf(a.category) - CATS.indexOf(b.category) || a.dom_area - b.dom_area);
+  const cols = AR().slice().sort((a, b) => b.size - a.size);
+  const cw = 26, rh = 16, lw = 170, th = 150;
+  const Wd = lw + cols.length * cw + 20, Hd = th + fac.length * rh + 10;
+  const svg = d3.create('svg').attr('width', Wd).attr('height', Hd).style('font-size', '11px');
+  const val = (f, a) => { const n = (fProfile(f).find(x => x[0] === a.id) || [0, 0])[1]; return norm === 'row' ? n / f.n_works : norm === 'col' ? n / a.size : n; };
+  const vmax = norm === 'count' ? d3.max(fac, f => d3.max(cols, a => val(f, a))) : norm === 'row' ? 1 : d3.max(fac, f => d3.max(cols, a => val(f, a)));
+  const cs = d3.scaleSequential(d3.interpolateBlues).domain([0, vmax]);
+  cols.forEach((a, j) => svg.append('text').attr('transform', `translate(${lw + j * cw + cw / 2 + 4},${th - 6}) rotate(-60)`).attr('fill', css('--text-2')).style('cursor', 'pointer').on('click', () => window.__showArea(a.id)).text(a.label.length > 34 ? a.label.slice(0, 32) + '…' : a.label));
+  fac.forEach((f, i) => {
+    svg.append('text').attr('x', lw - 6).attr('y', th + i * rh + 12).attr('text-anchor', 'end').attr('fill', css('--text-2')).style('cursor', 'pointer').on('click', () => openPanel(f.i)).text(f.name);
+    cols.forEach((a, j) => { const v = val(f, a); svg.append('rect').attr('x', lw + j * cw).attr('y', th + i * rh).attr('width', cw - 2).attr('height', rh - 2).attr('rx', 2).attr('fill', v > 0 ? cs(v) : css('--surface-2')).on('mouseenter', ev => showTip(`<b>${f.name}</b>${a.label}<br>${(fProfile(f).find(x => x[0] === a.id) || [0, 0])[1]} papers (${(val(f, a) * (norm === 'count' ? 1 : 100)).toFixed(norm === 'count' ? 0 : 0)}${norm === 'count' ? '' : '%'})`, ev)).on('mousemove', moveTip).on('mouseleave', hideTip); });
+  });
+  document.getElementById('heatWrap').innerHTML = ''; document.getElementById('heatWrap').appendChild(svg.node());
 }
+renderers.areas = renderAreas;
+['areaSort', 'heatNorm'].forEach(id => document.getElementById(id).onchange = renderAreas);
+window.__showArea = id => { showView('areas'); const el = document.getElementById('area-' + id); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.style.outline = '2px solid ' + css('--accent'); setTimeout(() => el.style.outline = '', 1800); } };
+window.__cloudArea = id => { showView('cloud'); document.getElementById('cloudColor').value = 'area'; renderCloud(); };
 
-['pub-search','pub-fac-filter','pub-year-filter','pub-sort'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => { PUB_PAGE=0; renderPubs(); });
-});
-document.getElementById('pub-search').addEventListener('input', () => { PUB_PAGE=0; renderPubs(); });
-
-// ── COMPARE ────────────────────────────────────────────────────────────────────
-function renderCompare() {
-  const body = document.getElementById('compare-body');
-  const slots = 4;
-  body.innerHTML = '';
-  for (let i=0; i<slots; i++) {
-    const fid = COMPARE_FAC[i];
-    const col = document.createElement('div');
-    col.className = 'compare-col';
-    if (fid) {
-      const f = FAC_BY_ID[fid];
-      const pubs = (FAC_PUBS[fid]||[]).sort((a,b)=>(b.citation_count||0)-(a.citation_count||0));
-      col.innerHTML = `
-        <div class="compare-col-hdr">
-          <div class="compare-col-name" style="color:${CAT_COLOR[f.category]||'var(--text)'}">${f.name}</div>
-          <button class="compare-col-remove" onclick="removeCompare('${fid}')">×</button>
-        </div>
-        <div class="compare-col-content">
-          <div class="compare-stat-grid">
-            <div class="compare-stat"><div class="cs-val">${f.h_index??'—'}</div><div class="cs-lbl">h-index</div></div>
-            <div class="compare-stat"><div class="cs-val">${(f.total_citations||0).toLocaleString()}</div><div class="cs-lbl">Citations</div></div>
-            <div class="compare-stat"><div class="cs-val">${pubs.length}</div><div class="cs-lbl">Pubs</div></div>
-            <div class="compare-stat"><div class="cs-val">${f.i10_index??'—'}</div><div class="cs-lbl">i10</div></div>
-          </div>
-          ${(f.interests||[]).length?`<div><div class="sec-lbl">Research Topics</div><div class="tags">${(f.interests||[]).map(i=>`<span class="tag" style="font-size:9px">${i}</span>`).join('')}</div></div>`:''}
-          <div><div class="sec-lbl">Top Publications</div>
-            ${pubs.slice(0,15).map(p=>`
-              <div class="compare-pub" onclick="this.classList.toggle('open')">
-                <div class="compare-pub-title">${p.title}</div>
-                <div class="compare-pub-meta">${p.year||''} ${p.citation_count?'· ★'+p.citation_count.toLocaleString():''}</div>
-                ${p.abstract?`<div class="compare-pub-abstract">${p.abstract}</div>`:''}
-              </div>`).join('')}
-          </div>
-        </div>`;
-    } else {
-      col.innerHTML = `<div class="compare-col-empty"><div style="font-size:28px;opacity:.2">+</div><div style="font-family:var(--mono);font-size:11px;color:var(--muted)">Search above<br>to add faculty</div></div>`;
-    }
-    body.appendChild(col);
-  }
-  document.getElementById('compare-hint').textContent =
-    COMPARE_FAC.length===0 ? 'Select up to 4 faculty to compare side by side' :
-    COMPARE_FAC.length===4 ? 'Maximum 4 faculty selected' :
-    `${COMPARE_FAC.length} selected — add ${4-COMPARE_FAC.length} more`;
-}
-
-function removeCompare(fid) {
-  COMPARE_FAC = COMPARE_FAC.filter(id=>id!==fid);
-  renderCompare();
-}
-
-// Compare search
-const cSearch = document.getElementById('compare-search');
-const cResults = document.getElementById('compare-results');
-cSearch.addEventListener('input', () => {
-  const q = cSearch.value.toLowerCase();
-  if (!q || !G) { cResults.style.display='none'; return; }
-  const matches = G.nodes.faculty
-    .filter(f => f.name.toLowerCase().includes(q) && !COMPARE_FAC.includes(f.id))
-    .slice(0,8);
-  if (!matches.length) { cResults.style.display='none'; return; }
-  cResults.innerHTML = matches.map(f =>
-    `<div class="compare-add-result" onclick="addCompare('${f.id}')" style="color:${CAT_COLOR[f.category]||'var(--text)'}">
-      ${f.name}<span style="color:var(--muted);font-size:10px;margin-left:6px">${CAT_LABEL[f.category]||''}</span>
-    </div>`).join('');
-  cResults.style.display='block';
-});
-document.addEventListener('click', e => {
-  if (!cSearch.contains(e.target) && !cResults.contains(e.target)) cResults.style.display='none';
-});
-function addCompare(fid) {
-  if (COMPARE_FAC.length<4 && !COMPARE_FAC.includes(fid)) {
-    COMPARE_FAC.push(fid);
-    renderCompare();
-  }
-  cSearch.value=''; cResults.style.display='none';
-}
-
-// ── Sample data ────────────────────────────────────────────────────────────────
-function loadSample() {
-  const fac = [
-    {id:'koushil_sreenath',name:'Koushil Sreenath',category:'core',h_index:28,i10_index:45,total_citations:4200,interests:['Legged Robots','Dynamic Locomotion','Control Theory','Safety-Critical Control'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'https://me.berkeley.edu/people/koushil-sreenath/',openalex_found:true,layout_x:120,layout_y:180},
-    {id:'masayoshi_tomizuka',name:'Masayoshi Tomizuka',category:'core',h_index:62,i10_index:310,total_citations:22000,interests:['Mechatronics','Motion Control','Robotics','Autonomous Driving'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'https://me.berkeley.edu/people/masayoshi-tomizuka/',openalex_found:true,layout_x:160,layout_y:220},
-    {id:'mark_w_mueller',name:'Mark W. Mueller',category:'core',h_index:22,i10_index:35,total_citations:2100,interests:['Aerial Robotics','Drone Control','State Estimation'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:140,layout_y:140},
-    {id:'negar_mehr',name:'Negar Mehr',category:'core',h_index:12,i10_index:14,total_citations:600,interests:['Autonomous Vehicles','Game Theory','Multi-agent Systems'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:200,layout_y:260},
-    {id:'murat_arcak',name:'Murat Arcak',category:'joint',h_index:38,i10_index:90,total_citations:7800,interests:['Nonlinear Control','Network Systems','Multi-agent'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:180,layout_y:300},
-    {id:'grace_x_gu',name:'Grace X. Gu',category:'core',h_index:24,i10_index:38,total_citations:2800,interests:['Machine Learning','Computational Mechanics','Bioinspired Materials'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:500,layout_y:400},
-    {id:'liwei_lin',name:'Liwei Lin',category:'core',h_index:52,i10_index:200,total_citations:13000,interests:['MEMS','Nanomanufacturing','Energy Harvesting','Wearables'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:600,layout_y:350},
-    {id:'shawn_shadden',name:'Shawn Shadden',category:'core',h_index:30,i10_index:55,total_citations:5100,interests:['CFD','Cardiovascular Flows','Lagrangian Methods'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:400,layout_y:550},
-    {id:'hannah_stuart',name:'Hannah Stuart',category:'core',h_index:14,i10_index:18,total_citations:780,interests:['Soft Robotics','Bio-inspired Design','Grasping'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:100,layout_y:280},
-    {id:'robert_o_ritchie',name:'Robert O. Ritchie',category:'joint',h_index:98,i10_index:460,total_citations:72000,interests:['Fracture Mechanics','Biomaterials','Fatigue','Metallurgy'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:650,layout_y:450},
-    {id:'alice_m_agogino',name:'Alice M. Agogino',category:'grad_school',h_index:42,i10_index:115,total_citations:8500,interests:['Design','Machine Learning','STEM Education'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:350,layout_y:200},
-    {id:'s_shankar_sastry',name:'S. Shankar Sastry',category:'joint',h_index:65,i10_index:280,total_citations:38000,interests:['Nonlinear Control','Robotics','Cyber-Physical Systems'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'',openalex_found:true,layout_x:220,layout_y:320},
-    {id:'kosa_gl',name:'Kosa Goucher-Lambert',category:'core',h_index:18,i10_index:25,total_citations:1800,interests:['Engineering Design','AI-assisted Design','Design Cognition','Creativity'],affiliation:'UC Berkeley',openalex_url:'',profile_url:'https://me.berkeley.edu/people/kosa-goucher-lambert/',openalex_found:true,layout_x:360,layout_y:180},
-  ];
-  const pubs = [
-    {id:'p1',title:'Bipedal Locomotion via Deep Reinforcement Learning on Complex Terrains',year:'2022',journal:'IEEE Robotics and Automation Letters',abstract:'A deep RL framework for bipedal locomotion on highly varied terrain.',citation_count:187,authors_raw:'Koushil Sreenath, Zhongyu Li'},
-    {id:'p2',title:'Aggressive Quadrotor Maneuvers via Differential Flatness',year:'2021',journal:'IEEE Transactions on Robotics',abstract:'Trajectory planning for aggressive quadrotor flight exploiting differential flatness.',citation_count:312,authors_raw:'Mark W. Mueller, Koushil Sreenath'},
-    {id:'p3',title:'Machine Learning Accelerates Composite Material Design',year:'2022',journal:'Nature Materials',abstract:'Deep neural networks reduce composite material design iterations by 90%.',citation_count:224,authors_raw:'Grace X. Gu, Chun-Teh Chen'},
-    {id:'p4',title:'Flexible Piezoelectric MEMS for Wearable Energy Harvesting',year:'2021',journal:'Nano Energy',abstract:'Flexible MEMS devices for body-motion energy harvesting.',citation_count:445,authors_raw:'Liwei Lin, Yinglong Jiang'},
-    {id:'p5',title:'Game-Theoretic Planning for Autonomous Vehicles in Dense Traffic',year:'2023',journal:'IEEE Transactions on Intelligent Transportation Systems',abstract:'Multi-agent motion planning as a dynamic game with real-time equilibrium computation.',citation_count:78,authors_raw:'Negar Mehr, Murat Arcak, S. Shankar Sastry'},
-    {id:'p6',title:'Lagrangian Coherent Structures in Patient-Specific Cardiac Flows',year:'2020',journal:'Journal of Fluid Mechanics',abstract:'Blood transport analysis using Lagrangian coherent structures.',citation_count:203,authors_raw:'Shawn Shadden, Amirhossein Arzani'},
-    {id:'p7',title:'Fracture Toughness and Fatigue Resistance of Metallic Glasses',year:'2019',journal:'Acta Materialia',abstract:'Fracture mechanics of bulk metallic glasses revealing toughening via shear transformation zones.',citation_count:521,authors_raw:'Robert O. Ritchie, M. Launey'},
-    {id:'p8',title:'Adaptive Inspirational Stimuli in Engineering Design Ideation',year:'2021',journal:'Design Studies',abstract:'Computationally selected inspirational stimuli improve design outcomes during ideation sessions.',citation_count:92,authors_raw:'Kosa Goucher-Lambert, J. Cagan'},
-    {id:'p9',title:'Understanding Human Trust in AI-Assisted Decision Making',year:'2023',journal:'Journal of Mechanical Design',abstract:'How confidence evolves in human-AI collaboration and its effect on decision acceptance.',citation_count:45,authors_raw:'Kosa Goucher-Lambert, S. Booth'},
-    {id:'p10',title:'Electroadhesive Soft Grippers for Unstructured Manipulation',year:'2022',journal:'Advanced Functional Materials',abstract:'Soft robotic grippers using electrostatic adhesion for diverse object grasping.',citation_count:118,authors_raw:'Hannah Stuart, Grace X. Gu'},
-  ];
-  const journals = [...new Set(pubs.map(p=>p.journal))].map(j=>({id:j.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,60),name:j}));
-  const authored = [
-    {from:'koushil_sreenath',to:'p1',year:'2022'},{from:'koushil_sreenath',to:'p2',year:'2021'},
-    {from:'mark_w_mueller',to:'p2',year:'2021'},{from:'grace_x_gu',to:'p3',year:'2022'},
-    {from:'liwei_lin',to:'p4',year:'2021'},{from:'negar_mehr',to:'p5',year:'2023'},
-    {from:'murat_arcak',to:'p5',year:'2023'},{from:'s_shankar_sastry',to:'p5',year:'2023'},
-    {from:'shawn_shadden',to:'p6',year:'2020'},{from:'robert_o_ritchie',to:'p7',year:'2019'},
-    {from:'masayoshi_tomizuka',to:'p1',year:'2022'},{from:'hannah_stuart',to:'p10',year:'2022'},
-    {from:'grace_x_gu',to:'p10',year:'2022'},{from:'kosa_gl',to:'p8',year:'2021'},
-    {from:'kosa_gl',to:'p9',year:'2023'},{from:'alice_m_agogino',to:'p8',year:'2021'},
-  ];
-  const pij = pubs.map(p=>({from:p.id,to:journals.find(j=>j.name===p.journal)?.id||''})).filter(e=>e.to);
-  const coauthored=[];
-  authored.forEach(e1=>authored.forEach(e2=>{ if(e1.to===e2.to&&e1.from!==e2.from) coauthored.push({from:e1.from,to:e2.from,via_publication:e1.to}); }));
-  const simEdges=[];
-  fac.forEach((a,i)=>fac.forEach((b,j)=>{ if(i<j) simEdges.push({from:a.id,to:b.id,similarity:Math.random()*.4+.5}); }));
-  init({
-    meta:{department:'Mechanical Engineering',university:'UC Berkeley',has_layout:true,generated_at:new Date().toISOString(),total_faculty:fac.length,total_pubs:pubs.length,total_journals:journals.length},
-    nodes:{faculty:fac,publications:pubs,journals},
-    edges:{faculty_authored:authored,pub_in_journal:pij,faculty_coauthored:coauthored,faculty_similar:simEdges},
-    errors:[],
+// ---------- MATRIX ----------
+const matSvg = d3.select('#matSvg'), matWrap = document.getElementById('matWrap');
+['matMeasure', 'matOrder', 'matCat'].forEach(id => document.getElementById(id).onchange = () => renderMatrix());
+CATS.forEach(c => { ['matCat', 'tabCat'].forEach(id => { const o = document.createElement('option'); o.value = c; o.textContent = c; document.getElementById(id).appendChild(o); }); });
+function renderMatrix() {
+  const W = matWrap.clientWidth, H = matWrap.clientHeight; if (!W) return;
+  const measure = document.getElementById('matMeasure').value, order = document.getElementById('matOrder').value, cat = document.getElementById('matCat').value;
+  let idx = F.filter(f => f.has_vector && (!cat || f.category === cat)).map(f => f.i);
+  if (order === 'cluster') { const pos = new Map(D.dendrogram_order.map((i, k) => [i, k])); idx.sort((a, b) => (pos.get(a) ?? 999) - (pos.get(b) ?? 999)); }
+  else if (order === 'category') idx.sort((a, b) => CATS.indexOf(F[a].category) - CATS.indexOf(F[b].category) || F[a].name.localeCompare(F[b].name));
+  else idx.sort((a, b) => F[a].name.localeCompare(F[b].name));
+  const M = measure === 'gap' ? null : D[measure];
+  const get = (a, b) => measure === 'gap' ? (D.coauthorship[a][b] > 0 ? 0 : D.similarity[a][b]) : M[a][b];
+  const lab = 150, n = idx.length, cell = Math.max(6, Math.min(22, (Math.min(W, H) - lab - 20) / n));
+  matSvg.selectAll('*').remove();
+  const g = matSvg.append('g').attr('transform', `translate(${lab},${lab})`);
+  const vals = []; idx.forEach(a => idx.forEach(b => { if (a !== b) vals.push(get(a, b)); }));
+  const ext = measure === 'coauthorship' ? [0, d3.max(vals) || 1] : [d3.quantile(vals.slice().sort(d3.ascending), .02), d3.quantile(vals.slice().sort(d3.ascending), .98)];
+  const cs = measure === 'coauthorship' ? d3.scaleSequentialSqrt(d3.interpolateOranges).domain(ext) : d3.scaleSequential(d3.interpolateBlues).domain(ext);
+  idx.forEach((a, i) => {
+    const nm = F[a].name.length > 22 ? F[a].name.split(' ').slice(-1)[0] : F[a].name;
+    g.append('text').attr('x', -10).attr('y', i * cell + cell * .72).attr('text-anchor', 'end').attr('font-size', Math.min(11, cell - 1)).attr('fill', css('--text-2')).style('cursor', 'pointer').on('click', () => openPanel(a)).text(nm);
+    g.append('rect').attr('x', -8).attr('y', i * cell + 1).attr('width', 5).attr('height', cell - 3).attr('fill', catColor(F[a].category));
+    g.append('text').attr('transform', `translate(${i * cell + cell * .72},-10) rotate(-90)`).attr('font-size', Math.min(11, cell - 1)).attr('fill', css('--text-2')).text(nm);
+    g.append('rect').attr('x', i * cell + 1).attr('y', -8).attr('width', cell - 3).attr('height', 5).attr('fill', catColor(F[a].category));
+    idx.forEach((b, j) => { const v = a === b ? null : get(a, b); g.append('rect').attr('x', j * cell).attr('y', i * cell).attr('width', cell - 1).attr('height', cell - 1).attr('fill', v == null ? css('--surface-2') : cs(v)).style('cursor', 'pointer')
+      .on('mouseenter', ev => v != null && showTip(`<b>${F[a].name} ↔ ${F[b].name}</b>cosine ${fmt3(D.similarity[a][b])} (${pctLabel(D.similarity_percentile[a][b])}) · topic sim ${fmt3(D.topic_similarity[a][b])} · ${D.coauthorship[a][b]} joint papers`, ev)).on('mousemove', moveTip).on('mouseleave', hideTip).on('click', () => { cmpSet.clear(); cmpSet.add(a); cmpSet.add(b); showView('compare'); }); });
   });
 }
+renderers.matrix = renderMatrix;
+
+// ---------- NETWORK ----------
+const netSvg = d3.select('#netSvg'), netWrap = document.getElementById('netWrap');
+document.getElementById('netMin').oninput = () => { document.getElementById('netMinLbl').textContent = document.getElementById('netMin').value; renderNetwork(); };
+document.getElementById('netSemantic').onchange = () => renderNetwork();
+let sim = null;
+function renderNetwork() {
+  const W = netWrap.clientWidth, H = netWrap.clientHeight; if (!W) return;
+  const min = +document.getElementById('netMin').value, semantic = document.getElementById('netSemantic').checked;
+  const links = [];
+  for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) if (D.coauthorship[a][b] >= min) links.push({ source: a, target: b, w: D.coauthorship[a][b], kind: 'co' });
+  if (semantic) F.forEach(f => f.neighbors.slice(0, 3).forEach(([j]) => { if (!links.some(l => (l.source === f.i && l.target === j) || (l.source === j && l.target === f.i))) links.push({ source: f.i, target: j, w: 1, kind: 'sem' }); }));
+  const used = new Set(links.flatMap(l => [l.source, l.target]));
+  const nodes = F.filter(f => used.has(f.i)).map(f => ({ ...f, id: f.i }));
+  netSvg.selectAll('*').remove();
+  const r = d3.scaleSqrt().domain([0, d3.max(F, f => f.total_citations)]).range([4, 20]);
+  if (sim) sim.stop();
+  sim = d3.forceSimulation(nodes).force('link', d3.forceLink(links.map(l => ({ ...l }))).id(d => d.id).distance(l => l.kind === 'sem' ? 90 : 60).strength(l => l.kind === 'sem' ? .15 : .5)).force('charge', d3.forceManyBody().strength(-180)).force('center', d3.forceCenter(W / 2, H / 2)).force('collide', d3.forceCollide(d => r(d.total_citations) + 14));
+  const g = netSvg.append('g');
+  const L = g.append('g').selectAll('line').data(sim.force('link').links()).join('line').attr('stroke', l => l.kind === 'sem' ? css('--text-3') : css('--s2')).attr('stroke-opacity', .5).attr('stroke-dasharray', l => l.kind === 'sem' ? '4 3' : null).attr('stroke-width', l => l.kind === 'sem' ? 1 : Math.min(8, 1 + Math.sqrt(l.w)));
+  const Nn = g.append('g').selectAll('g').data(nodes).join('g').style('cursor', 'pointer').on('click', (ev, d) => openPanel(d.i)).on('mouseenter', (ev, d) => showTip(`<b>${d.name}</b><span class="sub">${d.coauthors.length} ME co-authors · ${d.coauthors.reduce((s, c) => s + c[1], 0)} joint papers</span>`, ev)).on('mousemove', moveTip).on('mouseleave', hideTip).call(d3.drag().on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; }).on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; }).on('end', (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+  Nn.append('circle').attr('r', d => r(d.total_citations)).attr('fill', d => catColor(d.category)).attr('stroke', css('--surface')).attr('stroke-width', 1.5);
+  Nn.append('text').text(d => d.name.split(' ').pop()).attr('dy', d => r(d.total_citations) + 10).attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', css('--text-2')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3);
+  const zoomN = d3.zoom().scaleExtent([.4, 4]).on('zoom', ev => g.attr('transform', ev.transform));
+  netSvg.call(zoomN);
+  sim.on('tick', () => { L.attr('x1', l => l.source.x).attr('y1', l => l.source.y).attr('x2', l => l.target.x).attr('y2', l => l.target.y); Nn.attr('transform', d => `translate(${d.x},${d.y})`); });
+  sim.on('end', () => { const xs = nodes.map(d => d.x), ys = nodes.map(d => d.y); const x0 = d3.min(xs) - 40, x1 = d3.max(xs) + 40, y0 = d3.min(ys) - 40, y1 = d3.max(ys) + 40; const k = Math.min(W / (x1 - x0), H / (y1 - y0), 1.5); netSvg.transition().duration(500).call(zoomN.transform, d3.zoomIdentity.translate(W / 2 - k * (x0 + x1) / 2, H / 2 - k * (y0 + y1) / 2).scale(k)); });
+  // gap table
+  const pairs = [];
+  for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) if (F[a].has_vector && F[b].has_vector && D.coauthorship[a][b] === 0) pairs.push([a, b, D.similarity[a][b]]);
+  pairs.sort((x, y) => y[2] - x[2]);
+  document.getElementById('gapTable').innerHTML = `<table class="data"><tr><th>Faculty</th><th>Faculty</th><th class="num">Similarity</th><th>Shared research areas</th></tr>${pairs.slice(0, 40).map(([a, b, s]) => { const A = new Map(fProfile(F[a])), B = new Map(fProfile(F[b])); const shared = [...A.keys()].filter(k => B.has(k)).sort((x, y) => (A.get(y) + B.get(y)) - (A.get(x) + B.get(x))).slice(0, 2).map(k => AREAS[k].label).join('; '); return `<tr><td><a href="#" onclick="window.__sel(${a});return false">${F[a].name}</a> <span class="pill">${CAT_SHORT[F[a].category]}</span></td><td><a href="#" onclick="window.__sel(${b});return false">${F[b].name}</a> <span class="pill">${CAT_SHORT[F[b].category]}</span></td><td class="num">${fmt3(s)} <span class="muted">(${pctLabel(D.similarity_percentile[a][b])})</span></td><td class="small muted">${shared}</td></tr>`; }).join('')}</table>`;
+}
+renderers.network = renderNetwork;
+
+// ---------- TRAJECTORIES ----------
+const trajSvg = d3.select('#trajSvg'), trajWrap = document.getElementById('trajWrap');
+const getTrajLayout = seg('trajLayout', () => renderTraj());
+const trajSel = document.getElementById('trajSel');
+F.filter(f => f.trajectory && f.trajectory.length >= 2).forEach(f => { const o = document.createElement('option'); o.value = f.i; o.textContent = f.name; trajSel.appendChild(o); });
+trajSel.onchange = () => renderTraj();
+function renderTraj() {
+  const W = trajWrap.clientWidth, H = trajWrap.clientHeight; if (!W) return;
+  const layout = getTrajLayout(); const one = trajSel.value === '' ? null : +trajSel.value;
+  const fs = F.filter(f => f.trajectory && f.trajectory.length >= (one == null ? 3 : 2) && (one == null || f.i === one));
+  const allpts = F.filter(f => f.has_vector).map(f => f[layout]).concat(fs.flatMap(f => f.trajectory.map(t => t[layout])));
+  const pad = 50; const x = d3.scaleLinear().domain(d3.extent(allpts, d => d[0])).nice().range([pad, W - pad]); const y = d3.scaleLinear().domain(d3.extent(allpts, d => d[1])).nice().range([H - pad, pad]);
+  trajSvg.selectAll('*').remove();
+  trajSvg.append('defs').append('marker').attr('id', 'tarrow').attr('viewBox', '0 0 10 10').attr('refX', 8).attr('refY', 5).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto').append('path').attr('d', 'M0,0 L10,5 L0,10 z').attr('fill', css('--text'));
+  const g = trajSvg.append('g');
+  trajSvg.call(d3.zoom().scaleExtent([.5, 6]).on('zoom', ev => g.attr('transform', ev.transform)));
+  // background: all faculty faint
+  g.append('g').selectAll('circle').data(F.filter(f => f.has_vector)).join('circle').attr('cx', f => x(f[layout][0])).attr('cy', f => y(f[layout][1])).attr('r', 3).attr('fill', css('--text-3')).attr('fill-opacity', .35).append('title').text(f => f.name);
+  const line = d3.line().x(d => x(d[layout][0])).y(d => y(d[layout][1])).curve(d3.curveCatmullRom.alpha(.6));
+  fs.forEach(f => {
+    const col = one != null ? css('--s2') : catColor(f.category);
+    g.append('path').attr('d', line(f.trajectory)).attr('fill', 'none').attr('stroke', col).attr('stroke-width', one != null ? 3 : 1.6).attr('stroke-opacity', one != null ? .9 : .55).attr('marker-end', 'url(#tarrow)').style('cursor', 'pointer').on('click', () => { trajSel.value = f.i; renderTraj(); openPanel(f.i); }).on('mouseenter', ev => showTip(`<b>${f.name}</b><span class="sub">${f.trajectory.map(t => t.era + ' (' + t.n + ')').join(' → ')}</span>`, ev)).on('mousemove', moveTip).on('mouseleave', hideTip);
+    f.trajectory.forEach((t, k) => { g.append('circle').attr('cx', x(t[layout][0])).attr('cy', y(t[layout][1])).attr('r', one != null ? 6 : 3).attr('fill', col).attr('stroke', css('--bg')).attr('stroke-width', 1.5).append('title').text(`${f.name} ${t.era}: ${t.n} papers`); if (one != null) g.append('text').attr('x', x(t[layout][0]) + 8).attr('y', y(t[layout][1]) + 4).attr('font-size', 11).attr('fill', css('--text')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3).text(t.era); });
+    if (one == null) g.append('text').attr('x', x(f.trajectory.at(-1)[layout][0]) + 6).attr('y', y(f.trajectory.at(-1)[layout][1])).attr('font-size', 10).attr('fill', css('--text-2')).attr('paint-order', 'stroke').attr('stroke', css('--bg')).attr('stroke-width', 3).text(f.name.split(' ').pop());
+  });
+  if (one != null) { const f = F[one]; g.selectAll('circle.bg').data(F.filter(x => x.has_vector && x.i !== one)).join('circle').attr('cx', x2 => x(x2[layout][0])).attr('cy', x2 => y(x2[layout][1])).attr('r', 3); F.filter(x => x.has_vector && x.i !== one).forEach(o => g.append('text').attr('x', x(o[layout][0]) + 5).attr('y', y(o[layout][1]) + 3).attr('font-size', 9).attr('fill', css('--text-3')).text(o.name.split(' ').pop())); }
+  const rows = F.filter(f => f.drift != null && f.n_works >= 10).sort((a, b) => b.drift - a.drift);
+  document.getElementById('driftTable').innerHTML = `<table class="data"><tr><th>Faculty</th><th>Category</th><th class="num">Drift pct</th><th class="num">Drift</th><th class="num">Works</th><th class="num">Last 10 yrs</th><th>Eras</th><th>Top topics</th></tr>${rows.map(f => `<tr><td><a href="#" onclick="window.__sel(${f.i});return false">${f.name}</a></td><td>${CAT_SHORT[f.category]}</td><td class="num">${Math.round(f.drift_pct * 100)}</td><td class="num">${f.drift.toFixed(4)}</td><td class="num">${f.n_works}</td><td class="num">${f.n_recent}</td><td class="small muted">${(f.trajectory || []).map(t => t.era.slice(0, 4)).join('→')}</td><td class="small muted">${f.top_topics.slice(0, 3).map(t => t[0]).join(' · ')}</td></tr>`).join('')}</table>`;
+}
+renderers.trajectories = renderTraj;
+
+// ---------- TABLE ----------
+let sortKey = 'total_citations', sortDir = -1;
+['tabCat', 'tabFilter'].forEach(id => document.getElementById(id).oninput = () => renderTable());
+function renderTable() {
+  const cat = document.getElementById('tabCat').value, q = document.getElementById('tabFilter').value.toLowerCase();
+  const cols = [['name', 'Name'], ['category', 'Category'], ['n_works', 'Works', 1], ['total_citations', 'Citations', 1], ['h_index', 'h', 1], ['first_year', 'From', 1], ['breadth', 'Breadth pct', 1], ['drift', 'Drift pct', 1], ['centrality', 'Centrality pct', 1], ['dom_area', 'Dominant area'], ['topics', 'Top OpenAlex topics']];
+  let rows = F.filter(f => (!cat || f.category === cat) && (!q || f.name.toLowerCase().includes(q) || f.top_topics.some(t => t[0].toLowerCase().includes(q)) || f.top_keywords.some(t => t[0].toLowerCase().includes(q)) || (f.research_description || '').toLowerCase().includes(q)));
+  rows.sort((a, b) => { const va = a[sortKey], vb = b[sortKey]; if (va == null) return 1; if (vb == null) return -1; return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * sortDir; });
+  document.getElementById('facTable').innerHTML = `<tr>${cols.map(c => `<th class="${c[2] ? 'num' : ''} ${sortKey === c[0] ? 'sorted' : ''}" data-k="${c[0]}">${c[1]}${sortKey === c[0] ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr>` + rows.map(f => `<tr><td><a href="#" onclick="window.__sel(${f.i});return false">${f.name}</a>${f.match_confidence && f.match_confidence !== 'high' ? ` <span class="pill ${f.match_confidence}" title="${f.match_notes}">${f.match_confidence}</span>` : ''}</td><td>${CAT_SHORT[f.category]}</td><td class="num">${f.n_works}</td><td class="num">${fmt(f.total_citations)}</td><td class="num">${f.h_index}</td><td class="num">${f.first_year || ''}</td><td class="num" title="${f.breadth}">${f.breadth_pct != null ? Math.round(f.breadth_pct * 100) : ''}</td><td class="num" title="${f.drift}">${f.drift_pct != null ? Math.round(f.drift_pct * 100) : ''}</td><td class="num" title="${f.centrality}">${f.centrality_pct != null ? Math.round(f.centrality_pct * 100) : ''}</td><td class="small">${f.dom_area >= 0 ? `<i class="sw" style="background:${areaColor(f.dom_area)};display:inline-block;margin-right:4px"></i>${AREAS[f.dom_area].label}` : ''}</td><td class="small muted">${f.top_topics.slice(0, 3).map(t => t[0]).join(' · ')}</td></tr>`).join('');
+  document.querySelectorAll('#facTable th').forEach(th => th.onclick = () => { const k = th.dataset.k; if (k === 'topics') return; if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = k === 'name' || k === 'category' ? 1 : -1; } renderTable(); });
+}
+renderers.table = renderTable;
+
+// ---------- COMPARE ----------
+const cmpSet = new Set(); const cmpSel = document.getElementById('cmpSel');
+F.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(f => { const o = document.createElement('option'); o.value = f.i; o.textContent = f.name; cmpSel.appendChild(o); });
+cmpSel.onchange = () => { if (cmpSel.value !== '') { if (cmpSet.size >= 4) cmpSet.delete([...cmpSet][0]); cmpSet.add(+cmpSel.value); cmpSel.value = ''; renderCompare(); } };
+document.getElementById('cmpClear').onclick = () => { cmpSet.clear(); renderCompare(); };
+window.__cmpAdd = i => { if (cmpSet.size >= 4) cmpSet.delete([...cmpSet][0]); cmpSet.add(i); showView('compare'); };
+function renderCompare() {
+  const ids = [...cmpSet];
+  const pairs = []; ids.forEach((a, i) => ids.slice(i + 1).forEach(b => pairs.push([a, b])));
+  document.getElementById('cmpPairs').innerHTML = ids.length < 2 ? '<div class="hint">Add two or more faculty to compare.</div>' : `<table class="data"><tr><th>Pair</th><th class="num">Embedding sim.</th><th class="num">Topic sim.</th><th class="num">Joint papers</th><th>Shared research areas</th></tr>${pairs.map(([a, b]) => { const A = new Map(fProfile(F[a])), B = new Map(fProfile(F[b])); const shared = [...A.keys()].filter(k => B.has(k)).map(k => `${AREAS[k].label} (${A.get(k)}/${B.get(k)})`).slice(0, 3).join('; '); return `<tr><td>${F[a].name} ↔ ${F[b].name}</td><td class="num">${fmt3(D.similarity[a][b])} <span class="muted">(${pctLabel(D.similarity_percentile[a][b])})</span></td><td class="num">${fmt3(D.topic_similarity[a][b])}</td><td class="num">${D.coauthorship[a][b]}</td><td class="small muted">${shared || '—'}</td></tr>`; }).join('')}</table>`;
+  document.getElementById('cmpGrid').innerHTML = ids.map(i => { const f = F[i]; return `<div class="card"><h4><a href="#" onclick="window.__sel(${i});return false">${f.name}</a> <button class="iconbtn" style="float:right;padding:1px 6px" onclick="window.__cmpRm(${i})">✕</button></h4><div class="small muted">${f.title || ''}</div><div class="stat-row" style="margin:8px 0"><div class="stat"><div class="v">${fmt(f.n_works)}</div><div class="k">works</div></div><div class="stat"><div class="v">${fmt(f.total_citations)}</div><div class="k">cites</div></div><div class="stat"><div class="v">${f.h_index}</div><div class="k">h</div></div><div class="stat"><div class="v">${f.breadth != null ? fmt2(f.breadth) : '–'}</div><div class="k">breadth</div></div></div><h3 style="font-size:11px;text-transform:uppercase;color:var(--text-3);margin:10px 0 4px">Research areas</h3>${(fProfile(f) || []).slice().sort((a, b) => b[1] - a[1]).slice(0, 5).map(([a, n]) => `<div class="fbar"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${AREAS[a].label}</span><div class="bar"><i style="width:${n / f.n_works * 100}%;background:${areaColor(a)}"></i></div><span class="num">${n}</span></div>`).join('')}<h3 style="font-size:11px;text-transform:uppercase;color:var(--text-3);margin:10px 0 4px">Topics</h3>${f.top_topics.slice(0, 6).map(t => `<span class="chip">${t[0]}</span>`).join('')}<h3 style="font-size:11px;text-transform:uppercase;color:var(--text-3);margin:10px 0 4px">Nearest faculty</h3>${f.neighbors.slice(0, 5).map(([j, s, pct]) => `<div class="small">${F[j].name} <span class="muted">${s.toFixed(3)} · ${pctLabel(pct)}</span></div>`).join('')}</div>`; }).join('');
+}
+window.__cmpRm = i => { cmpSet.delete(i); renderCompare(); };
+renderers.compare = renderCompare;
+
+// ---------- PUBLICATIONS ----------
+const pubFac = document.getElementById('pubFac'), pubArea = document.getElementById('pubArea');
+F.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(f => { const o = document.createElement('option'); o.value = f.i; o.textContent = f.name; pubFac.appendChild(o); });
+
+['pubQ', 'pubFac', 'pubArea', 'pubY0', 'pubY1', 'pubSort'].forEach(id => document.getElementById(id).oninput = () => renderPubs());
+document.getElementById('pubAbs').onclick = async () => { if (!ABS) { document.getElementById('pubAbs').textContent = 'loading…'; ABS = await (await fetch('output/abstracts.json')).json(); document.getElementById('pubAbs').textContent = 'abstracts loaded'; renderPubs(); } };
+function renderPubs() {
+  if (pubArea.dataset.gran !== gran) { const cur = pubArea.value; pubArea.innerHTML = '<option value="">All</option>' + AR().map(a => `<option value="${a.id}">${a.label}</option>`).join(''); pubArea.dataset.gran = gran; pubArea.value = ''; }
+  const q = document.getElementById('pubQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean), fac = pubFac.value, area = pubArea.value, y0 = +document.getElementById('pubY0').value || 0, y1 = +document.getElementById('pubY1').value || 9999, sort = document.getElementById('pubSort').value;
+  let rows = P.filter(p => (fac === '' || p.f.includes(+fac)) && (area === '' || pArea(p) === +area) && (p.y || 0) >= y0 && (p.y || 0) <= y1 && (!q.length || q.every(w => (p.t || '').toLowerCase().includes(w) || (ABS && (ABS[p.id] || '').toLowerCase().includes(w)))));
+  rows.sort((a, b) => sort === 'cites' ? b.c - a.c : (b.y || 0) - (a.y || 0));
+  document.getElementById('pubCount').textContent = `${fmt(rows.length)} publications`;
+  document.getElementById('pubTable').innerHTML = `<tr><th>Title</th><th>Faculty</th><th>Venue</th><th class="num">Year</th><th class="num">Cites</th><th>Area</th></tr>` + rows.slice(0, 400).map(p => `<tr><td>${p.d ? `<a href="https://doi.org/${p.d}" target="_blank" rel="noopener">${p.t}</a>` : p.t}${ABS && ABS[p.id] ? `<div class="small muted" style="margin-top:3px">${ABS[p.id].slice(0, 300)}…</div>` : ''}${p.k ? ' <span class="pill" title="no abstract available; embedded from title only">title only</span>' : ''}</td><td class="small">${p.f.map(i => `<a href="#" onclick="window.__sel(${i});return false">${F[i].name}</a>`).join(', ')}</td><td class="small muted">${p.v || ''}</td><td class="num">${p.y || ''}</td><td class="num">${fmt(p.c)}</td><td class="small"><i class="sw" style="background:${areaColor(pArea(p))};display:inline-block;margin-right:4px"></i>${pArea(p) >= 0 ? AREAS[pArea(p)].label : ''}</td></tr>`).join('') + (rows.length > 400 ? `<tr><td colspan="6" class="muted">Showing 400 of ${fmt(rows.length)} — refine the filters.</td></tr>` : '');
+}
+renderers.pubs = renderPubs;
+window.__pubsFor = i => { pubFac.value = i; showView('pubs'); };
+window.__pubsArea = a => { pubArea.value = a; showView('pubs'); };
+window.__pubsQ = q => { document.getElementById('pubQ').value = q; showView('pubs'); };
+
+// ---------- ABOUT ----------
+function renderAbout() {
+  const m = D.meta, v = D.validation;
+  document.getElementById('aboutBody').innerHTML = `
+  <h2>What this is</h2>
+  <p>An interactive map of the research landscape of the UC Berkeley Department of Mechanical Engineering: ${m.n_faculty} faculty (${m.categories.join(', ')}) and ${fmt(m.n_papers)} publications, generated ${m.generated_at.slice(0, 10)}. Faculty roster and profiles come from <a href="https://me.berkeley.edu/faculty/">me.berkeley.edu</a>; publications, citations, topics and author identities from <a href="https://openalex.org">OpenAlex</a>.</p>
+  <h2>Pipeline</h2>
+  <h3>1. Author identity</h3><p>Each faculty member was resolved to one or more OpenAlex author records by searching name variants and checking affiliations, topic profiles and sample papers against the department profile. Split profiles (the same person under several OpenAlex IDs) are merged; merged profiles (one OpenAlex ID covering several namesakes) are cleaned with per-paper affiliation and topic filters. Every record carries a confidence label and notes — open any profile and see "Identity".</p>
+  <h3>2. Corpus cleaning</h3><p>Dropped: paratext, retractions, errata, editorials, letters, machine-translated duplicates, non-English records without an English title, records without any text. Duplicates are merged by DOI. Papers without an abstract (${fmt(v.n_title_only)} of ${fmt(v.n_papers)}) are embedded from their title alone and flagged.</p>
+  <h3>3. Embeddings</h3><p>Every paper is embedded with <code>${m.embedding_model}</code> — a SciBERT-based model trained on citation proximity, so papers that cite each other land close together — using <code>title [SEP] abstract</code>, CLS pooling, ${m.embedding_dim} dimensions, unit length. Computed locally on CPU; no external embedding API.</p>
+  <h3>4. Similarity space — raw cosine, deliberately</h3><p>SPECTER-style embeddings share a strong common direction: the raw cosine between any two engineering papers is ≈0.9 (department-wide pairwise mean ${fmt3(v.pairwise_cos_raw.mean)} ± ${fmt3(v.pairwise_cos_raw.std)}). The usual remedy is to subtract the mean vector before comparing. We evaluated that and <b>rejected it</b>: against two signals that do not come from the embeddings, raw cosine ranks pairs better than mean-centred cosine (Spearman vs OpenAlex topic profiles ${fmt3(v.spearman_vs_openalex_topics.raw)} vs ${fmt3(v.spearman_vs_openalex_topics.centred)}; co-authorship AUC ${fmt3(v.coauthor_auc.raw)} vs ${fmt3(v.coauthor_auc.centred)}), and removing further principal directions degrades it monotonically. The shared component carries real field information, and the department mean is dominated by its largest groups, so centring distorts the geometry for everyone else. Raw cosine is therefore the primary similarity; because its absolute values are compressed, the interface reports each pair's <i>percentile rank among all faculty pairs</i> alongside the cosine. The centred matrix is still available in the Similarity view for comparison.</p>
+  <h3>5. Faculty vectors</h3><p><b>Career</b>: weighted mean of a faculty member's paper vectors with weight <code>${m.weights.career}</code> — a mild impact weighting that keeps a 1,000-citation paper within ~10× of an uncited one. <b>Recent</b>: weighted mean with <code>${m.weights.recent}</code> (half-life ≈ 2.8 years), no citation weighting since recent papers have not accumulated citations. <b>Eras</b>: unweighted means over 5-year windows with ≥5 papers (Trajectories view). All renormalised to unit length.</p>
+  <h3>6. Layouts and research areas</h3><p>Faculty map: PCA (global structure, axes are the principal directions of the faculty vectors; explained variance of the first two components ${(v.pca_explained_variance_ratio || []).slice(0, 2).map(x => (x * 100).toFixed(1) + '%').join(' / ')}) and UMAP (${JSON.stringify(m.umap_faculty)}; fitted jointly on career, recent and era vectors so that all points share one map). Paper cloud: UMAP on all papers (${JSON.stringify(m.umap_papers)}). Research areas: ${m.clustering.method} (min cluster size ${m.clustering.min_cluster_size}) → ${m.clustering.n_areas} areas; ${fmt(m.clustering.noise_points)} outlier papers are attached to the nearest area for the profiles and marked as such. Labels are the top class-based TF-IDF terms of each area; the most frequent OpenAlex topics are shown alongside as an independent description.</p>
+  <h3>7. Metrics</h3><p><b>Breadth</b>: mean pairwise cosine distance among a faculty member's own papers — higher means more diverse output. Shown as a percentile among faculty because raw cosine distances are compressed. <b>Drift</b>: cosine distance between career and recent vectors. <b>Centrality</b>: mean similarity to all other faculty. <b>Area entropy</b>: Shannon entropy of the paper distribution over research areas.</p>
+  <h2>Validation</h2>
+  <p>The embedding space is checked against two signals that do not come from the embeddings:</p>
+  <dl class="kv">
+    <dt>Self-similarity / symmetry max error</dt><dd>${v.self_similarity_max_abs_err.toExponential(1)} / ${v.symmetry_max_abs_err.toExponential(1)}</dd>
+    <dt>Pairwise cosine, raw (mean ± sd, range)</dt><dd>${fmt3(v.pairwise_cos_raw.mean)} ± ${fmt3(v.pairwise_cos_raw.std)} (${fmt3(v.pairwise_cos_raw.min)} … ${fmt3(v.pairwise_cos_raw.max)})</dd>
+    <dt>Pairwise cosine, mean-centred</dt><dd>${fmt3(v.pairwise_cos_centred.mean)} ± ${fmt3(v.pairwise_cos_centred.std)} (${fmt3(v.pairwise_cos_centred.min)} … ${fmt3(v.pairwise_cos_centred.max)})</dd>
+    <dt>Spearman ρ vs OpenAlex topic-profile similarity</dt><dd>raw ${fmt3(v.spearman_vs_openalex_topics.raw)} · centred ${fmt3(v.spearman_vs_openalex_topics.centred)}</dd>
+    <dt>Co-authorship AUC (do co-authors look more similar?)</dt><dd>${v.coauthor_auc ? `raw ${fmt3(v.coauthor_auc.raw)} · centred ${fmt3(v.coauthor_auc.centred)} (${v.coauthor_pairs} co-author pairs)` : '–'}</dd>
+    <dt>Leave-one-out paper → own-faculty nearest-centroid accuracy</dt><dd>${(v.loo_paper_to_faculty_accuracy.overall * 100).toFixed(1)}% over ${v.loo_paper_to_faculty_accuracy.n_faculty} faculty with ≥10 papers (chance ${(v.loo_paper_to_faculty_accuracy.chance * 100).toFixed(1)}%)</dd>
+  </dl>
+  <p class="small muted">Per-faculty leave-one-out accuracy (low values indicate either very broad output or possible mis-attributed papers): ${Object.entries(v.loo_paper_to_faculty_accuracy.per_faculty).sort((a, b) => a[1] - b[1]).slice(0, 12).map(([s, a]) => `${F.find(f => f.slug === s)?.name ?? s} ${(a * 100).toFixed(0)}%`).join(' · ')}</p>
+  <h2>Limitations</h2>
+  <ul><li>OpenAlex author disambiguation is imperfect; residual contamination is possible for common names even after filtering (profiles flagged "medium").</li><li>About a third of records have no abstract in OpenAlex; those are embedded from the title only.</li><li>Two-dimensional layouts distort distances — use the similarity matrix and neighbour lists for pairwise questions.</li><li>Citation-weighted career vectors emphasise older, well-cited work; use the Recent toggle for current activity.</li><li>Lecturers and incoming faculty with few indexed papers have noisy positions.</li></ul>
+  <p class="small muted">Source and build scripts: <a href="https://github.com/kgl-research/berkeley-me-kg">github.com/kgl-research/berkeley-me-kg</a>.</p>`;
+}
+renderers.about = renderAbout;
+
+// ---------- init ----------
+window.addEventListener('resize', () => { if (renderers[currentView]) renderers[currentView](); });
+const h = location.hash.replace('#', ''); showView(renderers[h] ? h : 'map');
+})();
 </script>
 </body>
 </html>
