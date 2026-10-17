@@ -112,5 +112,31 @@
   0.035,
   0.0293,
   0.0237
- ]
+ ],
+ "layout_quality": {
+  "tsne": {
+   "trust5": 0.683,
+   "trust10": 0.667,
+   "global_rho": 0.623,
+   "isolation": 2.03
+  },
+  "umap": {
+   "trust5": 0.606,
+   "trust10": 0.656,
+   "global_rho": 0.649,
+   "isolation": 1.89
+  },
+  "mds": {
+   "trust5": 0.422,
+   "trust10": 0.55,
+   "global_rho": 0.823,
+   "isolation": 5.97
+  },
+  "pca": {
+   "trust5": 0.431,
+   "trust10": 0.543,
+   "global_rho": 0.748,
+   "isolation": 3.95
+  }
+ }
 }

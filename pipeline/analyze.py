@@ -239,35 +239,83 @@ def main():
     pc_career = pca.transform(career_c)
     pc_recent = pca.transform(recent_c)
     val["pca_explained_variance_ratio"] = [round(float(x), 4) for x in pca.explained_variance_ratio_]
-    # UMAP fit on career + recent + era vectors jointly so all points share one map
-    era_keys = sorted(eras)
-    stack = np.vstack([career_c[have], recent_c[have]] + ([np.stack([eras[k] for k in era_keys])] if era_keys else []))
-    # UMAP initialised from the PCA projection: on this size of data (~250 vectors) spectral init
-    # isolates tight pairs; PCA init keeps global structure (5-NN trust 0.63, global distance rho 0.68
-    # vs 0.60 / 0.59 for the default initialisation).
-    init_xy = pca.transform(stack)[:, :2]
-    um = umap.UMAP(n_neighbors=12, min_dist=0.5, metric="cosine", random_state=SEED, n_components=2, init=init_xy).fit(stack)
-    U = um.embedding_
-    nh = int(have.sum())
-    hv = np.where(have)[0]
-    umap_career = np.full((F, 2), np.nan); umap_recent = np.full((F, 2), np.nan)
-    umap_career[hv] = U[:nh]; umap_recent[hv] = U[nh:2 * nh]
-    umap_era = {k: U[2 * nh + i] for i, k in enumerate(era_keys)}
-    from sklearn.manifold import MDS
+    # Faculty layouts are fitted on the CAREER vectors ONLY. (Fitting jointly with recent and era
+    # vectors was wrong: each person's own era vectors are their nearest neighbours, so the kNN graph
+    # degenerates into one island per person.) Recent and era vectors are then placed out-of-sample.
+    # Chosen on 5-/10-NN trust, global distance correlation and an isolation index (see README):
+    #   t-SNE perplexity 10, PCA init:  trust5 0.68  trust10 0.68  rho 0.66  isolation 2.1  (default "map")
+    #   UMAP nn=10 min_dist .5 PCA init: trust5 0.61  trust10 0.63  rho 0.64  isolation 1.9
+    #   MDS on cosine distance:          trust5 0.42  trust10 0.55  rho 0.82  isolation 6.0
+    from sklearn.manifold import TSNE, MDS
     from scipy.optimize import minimize
-    Dc = 1 - career_c[have] @ career_c[have].T
+    era_keys = sorted(eras)
+    hv = np.where(have)[0]
+    nh = len(hv)
+    Vh = career_c[hv]
+    p2 = pca.transform(Vh)[:, :2]
+    tsne = TSNE(n_components=2, perplexity=10, metric="cosine", init="pca", random_state=SEED)
+    T = tsne.fit_transform(Vh)
+
+    def tsne_affinities(v, perplexity=10.0):
+        """Gaussian affinities p_j of an out-of-sample vector v to the career vectors, calibrated to the perplexity."""
+        d = 1 - Vh @ v
+        lo, hi = 1e-6, 1e6
+        for _ in range(60):
+            beta = np.sqrt(lo * hi)
+            P = np.exp(-(d - d.min()) * beta); P /= P.sum()
+            H = -(P[P > 0] * np.log(P[P > 0])).sum()
+            if np.exp(H) > perplexity:
+                lo = beta
+            else:
+                hi = beta
+        return P
+
+    def tsne_place(v, self_idx=None):
+        """Out-of-sample t-SNE: position minimising KL(p || q) against the fitted map (q = Student-t kernel)."""
+        P = tsne_affinities(v)
+        def obj(x):
+            q = 1.0 / (1.0 + ((T - x) ** 2).sum(1)); q /= q.sum()
+            return (P * np.log((P + 1e-12) / (q + 1e-12))).sum()
+        x0 = T[np.argmax(P)] if self_idx is None else T[self_idx]
+        return minimize(obj, x0, method="L-BFGS-B").x
+
+    um = umap.UMAP(n_neighbors=10, min_dist=0.5, metric="cosine", random_state=SEED, n_components=2, init=p2).fit(Vh)
+    U = um.embedding_
+    Dc = 1 - Vh @ Vh.T
     mds = MDS(n_components=2, dissimilarity="precomputed", random_state=SEED, normalized_stress="auto").fit(Dc)
     M = mds.embedding_
     def mds_place(v):
-        dd = 1 - career_c[have] @ v
-        obj = lambda p: ((np.linalg.norm(M - p, axis=1) - dd) ** 2).sum()
-        p0 = M[np.argmin(dd)]
-        return minimize(obj, p0, method="L-BFGS-B").x
+        dd = 1 - Vh @ v
+        obj = lambda x: ((np.linalg.norm(M - x, axis=1) - dd) ** 2).sum()
+        return minimize(obj, M[np.argmin(dd)], method="L-BFGS-B").x
+
+    tsne_career = np.full((F, 2), np.nan); tsne_recent = np.full((F, 2), np.nan)
+    umap_career = np.full((F, 2), np.nan); umap_recent = np.full((F, 2), np.nan)
     mds_career = np.full((F, 2), np.nan); mds_recent = np.full((F, 2), np.nan)
-    mds_career[hv] = M
+    tsne_career[hv] = T; umap_career[hv] = U; mds_career[hv] = M
     for k, fi in enumerate(hv):
-        mds_recent[fi] = mds_place(recent_c[fi]) if np.linalg.norm(recent_c[fi]) > 0 else M[k]
+        if np.linalg.norm(recent_c[fi]) > 0:
+            tsne_recent[fi] = tsne_place(recent_c[fi], self_idx=k)
+            umap_recent[fi] = um.transform(recent_c[fi][None])[0]
+            mds_recent[fi] = mds_place(recent_c[fi])
+        else:
+            tsne_recent[fi] = T[k]; umap_recent[fi] = U[k]; mds_recent[fi] = M[k]
+    row_of = {fi: k for k, fi in enumerate(hv)}
+    tsne_era = {k: tsne_place(eras[k], self_idx=row_of.get(k[0])) for k in era_keys}
+    umap_era = {k: um.transform(eras[k][None])[0] for k in era_keys}
     mds_era = {k: mds_place(eras[k]) for k in era_keys}
+    # layout quality metrics (kNN trust against the cosine neighbourhoods, global distance correlation, isolation)
+    from scipy.spatial.distance import cdist, pdist
+    from scipy.stats import spearmanr as _sp
+    Sh = Vh @ Vh.T
+    def _trust(X, k):
+        D2 = cdist(X, X); hits = 0
+        for i in range(nh):
+            hits += len(set(np.argsort(-Sh[i])[1:k + 1]) & set(np.argsort(D2[i])[1:k + 1]))
+        return round(hits / (nh * k), 3)
+    def _isol(X):
+        D2 = cdist(X, X); np.fill_diagonal(D2, np.inf); nn_ = D2.min(1); return round(float(nn_.max() / np.median(nn_)), 2)
+    val["layout_quality"] = {name: {"trust5": _trust(X, 5), "trust10": _trust(X, 10), "global_rho": round(float(_sp(pdist(X), pdist(Vh, "cosine")).correlation), 3), "isolation": _isol(X)} for name, X in [("tsne", T), ("umap", U), ("mds", M), ("pca", p2)]}
     pca_era = {k: pca.transform(eras[k][None])[0] for k in era_keys}
 
     # ---------- paper-level map + research areas ----------
@@ -420,11 +468,13 @@ def main():
         for (a, b) in ERA_WINDOWS:
             k = (fi, a, b)
             if k in eras:
-                trajectory.append({"era": (f"≤{b}" if a <= 1960 else f"{a}-{b}"), "umap": [float(x) for x in umap_era[k]], "pca": [float(x) for x in pca_era[k][:2]], "mds": [float(x) for x in mds_era[k]], "n": int(((np.array([works[r]['year'] or 0 for r in rows]) >= a) & (np.array([works[r]['year'] or 0 for r in rows]) <= b)).sum())})
+                trajectory.append({"era": (f"≤{b}" if a <= 1960 else f"{a}-{b}"), "tsne": [float(x) for x in tsne_era[k]], "umap": [float(x) for x in umap_era[k]], "pca": [float(x) for x in pca_era[k][:2]], "mds": [float(x) for x in mds_era[k]], "n": int(((np.array([works[r]['year'] or 0 for r in rows]) >= a) & (np.array([works[r]['year'] or 0 for r in rows]) <= b)).sum())})
         fac_out.append({
             **{k: f[k] for k in ["slug", "name", "category", "title", "profile_url", "openalex_ids", "match_notes", "match_confidence", "research_description", "bio", "links", "n_works", "n_with_abstract", "total_citations", "first_year", "last_year"]},
             "h_index": h,
             "has_vector": bool(have[fi]),
+            "tsne": [float(x) for x in tsne_career[fi]] if have[fi] else None,
+            "tsne_recent": [float(x) for x in tsne_recent[fi]] if have[fi] else None,
             "umap": [float(x) for x in umap_career[fi]] if have[fi] else None,
             "umap_recent": [float(x) for x in umap_recent[fi]] if have[fi] else None,
             "pca": [float(x) for x in pc_career[fi][:2]] if have[fi] else None,
@@ -469,7 +519,8 @@ def main():
             "n_faculty_with_vectors": int(have.sum()),
             "weights": {"career": "log(2 + citations)", "recent": f"exp(-(REF_YEAR - year)/{TAU}), REF_YEAR={REF_YEAR}"},
             "similarity_space": "raw SPECTER2 cosine (primary); mean-centred cosine kept as similarity_centred for comparison",
-            "umap_faculty": {"n_neighbors": 12, "min_dist": 0.5, "metric": "cosine", "init": "PCA", "seed": SEED, "fit_on": "career + recent + era vectors"},
+            "tsne_faculty": {"perplexity": 10, "metric": "cosine", "init": "PCA", "seed": SEED, "fit_on": "career vectors only; recent and era vectors placed out-of-sample by minimising KL to the fitted map"},
+            "umap_faculty": {"n_neighbors": 10, "min_dist": 0.5, "metric": "cosine", "init": "PCA", "seed": SEED, "fit_on": "career vectors only; recent/era via umap.transform"},
             "mds_faculty": "metric MDS on cosine distances between career vectors (recent/era points placed by out-of-sample projection: least-squares fit to distances)",
             "umap_papers": {"n_neighbors": 15, "min_dist": 0.05, "metric": "cosine", "pre_pca": 50, "seed": SEED},
             "clustering": {"method": "HDBSCAN on 5-D UMAP, oversized clusters (>6% of corpus) re-clustered recursively", "min_cluster_size": int(MIN_CL), "min_samples": 5, "n_areas": int(n_cl), "noise_points": int((labels < 0).sum())},
@@ -512,7 +563,7 @@ def main():
     import pickle
     (DATA / "models").mkdir(exist_ok=True)
     with open(DATA / "models" / "layouts.pkl", "wb") as fh:
-        pickle.dump({"umap_faculty": um, "pca_faculty": pca, "mds_points": M, "pca50": None, "umap_papers": um_p, "pca50_model": pca50_model}, fh)
+        pickle.dump({"umap_faculty": um, "pca_faculty": pca, "mds_points": M, "tsne_points": T, "career_have": Vh, "umap_papers": um_p, "pca50_model": pca50_model}, fh)
     np.save(DATA / "paper_embeddings_f16.npy", Praw.astype(np.float16))
     print("wrote output/explorer_data.json, papers.json, abstracts.json, validation.json")
     for a in areas:
